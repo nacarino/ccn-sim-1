@@ -1,7 +1,7 @@
 // for timing functions
 #include <algorithm>
-#include <ctime>
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -47,12 +47,15 @@ NS_LOG_COMPONENT_DEFINE ("TCPBulkTest");
 // Number generator
 br::mt19937_64 gen;
 
+// Obtains a random number from a uniform distribution between min and max.
+// Must seed number generator to ensure randomness at runtime.
 int obtain_Num(int min, int max) {
     br::uniform_int_distribution<> dist(min, max);
     return dist(gen);
 }
 
-// Obtains a random list of clients and servers
+// Obtains a random list of clients and servers. Must be run once all nodes have been
+// created to function correctly
 tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignClientsandServers(int num_clients, int num_servers) {
 
 	char buffer[250];

@@ -31,36 +31,48 @@
  * to make very large simulations.
  */
 
-// for timing functions
+// Standard C++ modules
+#include <algorithm>
 #include <cstdlib>
-#include <sys/time.h>
+#include <ctime>
 #include <fstream>
+#include <iterator>
+#include <string>
+#include <sys/time.h>
+#include <vector>
 
+// Random modules
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/random/variate_generator.hpp>
+
+// ns3 modules
+#include <ns3-dev/ns3/applications-module.h>
 #include <ns3-dev/ns3/core-module.h>
 #include <ns3-dev/ns3/internet-module.h>
-#include <ns3-dev/ns3/network-module.h>
-#include <ns3-dev/ns3/point-to-point-module.h>
-#include <ns3-dev/ns3/applications-module.h>
-#include <ns3-dev/ns3/onoff-application.h>
-#include <ns3-dev/ns3/packet-sink.h>
-#include <ns3-dev/ns3/simulator.h>
-#include <ns3-dev/ns3/ipv4-static-routing-helper.h>
+#include <ns3-dev/ns3/ipv4-address.h>
+#include <ns3-dev/ns3/ipv4-interface-address.h>
 #include <ns3-dev/ns3/ipv4-list-routing-helper.h>
 #include <ns3-dev/ns3/ipv4-nix-vector-helper.h>
+#include <ns3-dev/ns3/ipv4-static-routing-helper.h>
+#include <ns3-dev/ns3/network-module.h>
+#include <ns3-dev/ns3/onoff-application.h>
+#include <ns3-dev/ns3/packet-sink.h>
+#include <ns3-dev/ns3/point-to-point-module.h>
+#include <ns3-dev/ns3/simulator.h>
+
+// ndnSIM modules
+#include <ns3-dev/ns3/ndnSIM-module.h>
 #include <ns3-dev/ns3/ndnSIM/utils/tracers/ipv4-rate-l3-tracer.h>
 #include <ns3-dev/ns3/ndnSIM/utils/tracers/ipv4-seqs-app-tracer.h>
-#include <ns3-dev/ns3/ndnSIM-module.h>
-
-#include <string>
-//#include <fstream>
-//#include "ns3/core-module.h"
-//#include "ns3/point-to-point-module.h"
-//#include "ns3/internet-module.h"
-//#include "ns3/applications-module.h"
-//#include "ns3/network-module.h"
-//#include "ns3/packet-sink.h"
 
 using namespace ns3;
+using namespace boost;
+
+namespace br = boost::random;
 
 typedef struct timeval TIMER_TYPE;
 #define TIMER_NOW(_t) gettimeofday (&_t,NULL);
@@ -68,6 +80,76 @@ typedef struct timeval TIMER_TYPE;
 #define TIMER_DIFF(_t1, _t2) (TIMER_SECONDS (_t1)-TIMER_SECONDS (_t2))
 
 NS_LOG_COMPONENT_DEFINE ("CampusNetworkModel");
+
+// Number generator
+br::mt19937_64 gen;
+
+// Obtains a random number from a uniform distribution between min and max.
+// Must seed number generator to ensure randomness at runtime.
+int obtain_Num(int min, int max) {
+    br::uniform_int_distribution<> dist(min, max);
+    return dist(gen);
+}
+
+// Obtains a random list of clients and servers. Must be run once all nodes have been
+// created to function correctly
+tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignClientsandServers(int num_clients, int num_servers) {
+
+	char buffer[250];
+
+	// Obtain the global list of Nodes in the simulation
+	NodeContainer global = NodeContainer::GetGlobal ();
+
+	// Get the number of nodes in the simulation
+	uint32_t size = global.GetN ();
+
+	sprintf(buffer, "assignClientsandServers, we have %d nodes", size);
+
+	NS_LOG_INFO (buffer);
+
+	sprintf(buffer, "assignClientsandServers, %d clients, %d servers", num_clients, num_servers);
+
+	// Check that we haven't asked for a scenario where we don't have enough Nodes to fufill
+	// the requirements
+	if (num_clients + num_servers > size) {
+		return tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > ();
+	}
+
+	std::vector<Ptr<Node> > globalmutable;
+
+	// Copy the global list into a mutable vector
+	for (uint32_t i = 0; i < size; i++) {
+		globalmutable.push_back (global.Get(i));
+	}
+
+	uint32_t clientMin = size - num_clients - 1;
+	uint32_t serverMin = clientMin - num_servers;
+
+	std::vector<Ptr<Node> > ClientContainer;
+	std::vector<Ptr<Node> > ServerContainer;
+
+	// Apply Fisher-Yates shuffle - start with clients
+	for (uint32_t i = size-1; i > clientMin; i--) {
+		// Get a random number
+		int toSwap = obtain_Num (0, i);
+		// Push into the client container the number we got from the global vector
+		ClientContainer.push_back (globalmutable[toSwap]);
+		// Swap the obtained number with the last element
+		std::swap (globalmutable[toSwap], globalmutable[i]);
+	}
+
+	// Apply Fisher-Yates shuffle - servers
+	for (uint32_t i = clientMin; i > serverMin; i--) {
+		// Get a random number
+		int toSwap = obtain_Num(0, i);
+		// Push into the client container the number we got from the global vector
+		ServerContainer.push_back(globalmutable[toSwap]);
+		// Swap the obtained number with the last element
+		std::swap (globalmutable[toSwap], globalmutable[i]);
+	}
+
+	return tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > (ClientContainer,ServerContainer);
+}
 
 void Progress ()
 {
@@ -135,28 +217,47 @@ private:
     const size_t m_xMax;
 };
 
+
+
 int main (int argc, char *argv[])
 {
 	TIMER_TYPE t0, t1, t2;
 	TIMER_NOW (t0);
-	std::cout << " ==== DARPA NMS CAMPUS NETWORK SIMULATION ====" << std::endl;
-	LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
+	std::cout << " ==== DARPA NMS CAMPUS NETWORK SIMULATION - TCP Bulk run====" << std::endl;
+	//LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
 
 	int nCN = 3, nLANClients = 42;
 	bool nix = true;
+	
+	// Char array for output strings
+	char buffer[250];
+
+	// These are our scenario arguments
+	uint32_t contentsize = 0; // Size in bytes of the content to transfer
+	uint32_t clients = 1; // Number of clients in the network
+	uint32_t servers = 1; // Number of servers in the network
+	uint32_t networks = 1; // Number of additional nodes in the network
 
 	CommandLine cmd;
 	cmd.AddValue ("CN", "Number of total CNs [2]", nCN);
 	cmd.AddValue ("LAN", "Number of nodes per LAN [42]", nLANClients);
 	cmd.AddValue ("NIX", "Toggle nix-vector routing", nix);
+	cmd.AddValue ("contentsize",
+			"Total number of bytes for application to send", contentsize);
+	cmd.AddValue ("clients", "Total number of clients in the network", clients);
+	cmd.AddValue ("servers", "Total number of servers in the network", servers);
+	cmd.AddValue ("networks", "Number of networks in the simulation", networks);
 	cmd.Parse (argc,argv);
 
-	if (nCN < 2)
+	/*if (nCN < 2)
 	{
 		std::cout << "Number of total CNs (" << nCN << ") lower than minimum of 2"
 				<< std::endl;
 		return 1;
-	}
+	}*/
+	
+	// Overwrite nCN with networks
+	nCN = networks;
 
 	std::cout << "Number of CNs: " << nCN << ", LAN nodes: " << nLANClients << std::endl;
 
@@ -443,7 +544,136 @@ int main (int argc, char *argv[])
 		delete[] ndc_ring;
 		delete[] nodes_ring;
 	}
+
+	// Make sure to seed our random
+	gen.seed(std::time(0));
     
+	// With the network assigned, time to randomly obtain clients and servers
+	NS_LOG_INFO ("Obtaining the clients and servers");
+	// Obtain the random lists of server and clients
+	tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > t = assignClientsandServers(clients, servers);
+
+	// Separate the tuple into clients and servers
+	std::vector<Ptr<Node> > clientVector = t.get<0> ();
+	std::vector<Ptr<Node> > serverVector = t.get<1> ();
+
+	NodeContainer clientNodes;
+	std::vector<uint32_t> clientNodeIds;
+	NodeContainer serverNodes;
+	std::vector<uint32_t> serverNodeIds;
+
+	// We have to manually introduce the Ptr<Node> to the NodeContainers
+	// We do this to make them easier to control later
+	for (uint32_t i = 0; i < clients ; i++)
+	{
+		Ptr<Node> tmp = clientVector[i];
+
+		uint32_t nodeNum = tmp->GetId();
+
+		sprintf (buffer, "Adding client node: %d", nodeNum);
+		NS_LOG_INFO (buffer);
+
+		clientNodes.Add(tmp);
+		clientNodeIds.push_back(nodeNum);
+	}
+
+	// Do the same for the server NodeContainer
+	for (uint32_t i = 0; i < servers; i++)
+	{
+		Ptr<Node> tmp = serverVector[i];
+
+		uint32_t nodeNum = tmp->GetId();
+
+		sprintf (buffer, "Adding server node: %d", nodeNum);
+		NS_LOG_INFO (buffer);
+
+		serverNodes.Add(tmp);
+		serverNodeIds.push_back(nodeNum);
+	}
+
+	// We don't really care which IP the clients are using, so we get one of their
+	// interfaces at random and make the send applications to that destination
+
+	// Port for communication
+	uint16_t port = 1027;
+
+	NS_LOG_INFO ("Create bulk application");
+	sprintf (buffer, "Bulk application to transfer %d bytes", contentsize);
+	NS_LOG_INFO (buffer);
+
+	// Create a BulkSendApplication and install it on the server nodes
+	std::vector<BulkSendHelper> sources;
+
+	for (int i = 0; i < clientVector.size(); i++)
+	{
+		//sprintf (buffer, "Using client %d", i);
+		//NS_LOG_INFO (buffer);
+
+		// Get node Id for info
+		uint32_t nodeNum = clientVector[i]->GetId();
+
+		//sprintf (buffer, "Using node %d", nodeNum);
+		//NS_LOG_INFO (buffer);
+
+		// Obtain the IPv4 information
+		Ptr<Ipv4> ipv4Client = (clientVector[i])->GetObject<Ipv4>();
+
+		//NS_LOG_INFO ("Checking IPv4 data!");
+
+		// We actually have IPv4 information
+		if (ipv4Client != NULL) {
+
+			uint32_t num_ifaces = ipv4Client->GetNInterfaces();
+
+			uint32_t random_iface = obtain_Num(0, num_ifaces-1);
+
+			Ptr<NetDevice> tmpDevice = ipv4Client->GetNetDevice(random_iface);
+
+			Ipv4InterfaceAddress::InterfaceAddressScope_e scope = Ipv4InterfaceAddress::GLOBAL;
+
+			// Obtain our address
+			Ipv4Address tmp = ipv4Client->SelectSourceAddress(tmpDevice, Ipv4Address (), scope);
+
+			sprintf (buffer, "Including Application to send to node: %d", nodeNum);
+			NS_LOG_INFO (buffer);
+
+			sources.push_back(BulkSendHelper ("ns3::TcpSocketFactory",
+					InetSocketAddress (tmp, port)));
+
+			sources[sources.size()-1].SetAttribute ("MaxBytes", UintegerValue (contentsize));
+		}
+		else
+		{
+			sprintf (buffer, "No IPv4 info on node %d", nodeNum);
+			NS_LOG_INFO (buffer);
+		}
+	}
+
+	sprintf (buffer, "Attaching applications");
+
+	NS_LOG_INFO (buffer);
+
+	// Attach the application to the serverNum node
+	ApplicationContainer sourceApps = ApplicationContainer ();
+
+	for (int i = 0; i < sources.size(); i++) {
+		sourceApps.Add(sources[i].Install (serverNodes));
+	}
+
+	// Begin and stop the bulk sender at the following times
+	sourceApps.Start (Seconds (1.0));
+	sourceApps.Stop (Seconds (19.0));
+
+	NS_LOG_INFO ("Create bulk clients");
+
+	// Create a PacketSinkApplication and install on all clients
+	PacketSinkHelper sink ("ns3::TcpSocketFactory",
+			InetSocketAddress (Ipv4Address::GetAny (), port));
+
+	// Install the sink application on all clients
+	ApplicationContainer sinkApps = sink.Install (clientNodes);
+	sinkApps.Start (Seconds (1.0));
+	sinkApps.Stop (Seconds (19.0));
 
 /*
 	// Create Traffic Flows
@@ -591,6 +821,7 @@ int main (int argc, char *argv[])
 	clientApps.Stop (Seconds (10.0));*/
 
 
+/*
 	////////////////////////////////////////////////////////////////////////////////////
 	//install TCP Client
 
@@ -654,37 +885,21 @@ int main (int argc, char *argv[])
 	sinkApps.Start (Seconds (0.0));
 	sinkApps.Stop (Seconds (10.0));
 	///////////////////////////////////////////////////////////////////////////////////
+*/
 
-	//////////////////////////////////
+	char filename[250];
 
-  
-  
-	//ndn stack
+	sprintf (filename, "results/disaster-tcp-rate-trace-%02d-%02d-%02d-%0*d.txt", networks, servers, clients, 12, contentsize);
 
-	/*ndn::StackHelper ndnHelper;
-	ndnHelper.SetDefaultRoutes (true);
-	ndnHelper.InstallAll ();
+	// Install the ndnSIM tracers for IPv4
+	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4RateL3Tracer> > > rateTracers = Ipv4RateL3Tracer::InstallAll (filename, Seconds (1.0));
 
-	// Consumer
-	ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerCbr");
-	// Consumer will request /prefix/0, /prefix/1, ...
-	consumerHelper.SetPrefix ("/Dinfo/tokyo/shinjuku/waseda-u/waseda");
-	consumerHelper.SetAttribute ("Frequency", StringValue ("100")); // 10 interests a second
-	//consumerHelper.Install (nodes.Get (12)); // first node
-	consumerHelper.Install (nodes_net2LAN[1][2][20].Get (0));
+	sprintf (filename, "results/disaster-tcp-app-delays-trace-%02d-%02d-%02d-%0*d.txt", networks, servers, clients, 12, contentsize);
 
+	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4SeqsAppTracer> > > seqApps = Ipv4SeqsAppTracer::InstallAll(filename);
 
-	// Producer
-	ndn::AppHelper producerHelper ("ns3::ndn::Producer");
-	// Producer will reply to all requests starting with /prefix
-	producerHelper.SetPrefix ("/Dinfo/tokyo/shinjuku/waseda-u/waseda");
-	producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
-	//producerHelper.Install (nodes.Get (2)); // last node
-	producerHelper.Install (nodes_net2LAN[0][2][20].Get (0));*/
-
-	Ipv4RateL3Tracer::InstallAll ("results/disaster-tcp-rate-trace.txt", Seconds (1.0));
-	Ipv4SeqsAppTracer::InstallAll("results/disaster-tcp-app-delays-trace.txt");
-	L2RateTracer::InstallAll ("results/disaster-tcp-drop-trace.txt", Seconds (0.5));
+	sprintf (filename, "results/disaster-tcp-drop-trace-%02d-%02d-%02d-%0*d.txt", networks, servers, clients, 12, contentsize);
+	L2RateTracer::InstallAll (filename, Seconds (0.5));
 
 	Simulator::Stop (Seconds (20.0));
 	Simulator::Run ();
