@@ -1,0 +1,22 @@
+1.
+apt-key adv --keyserver keys.gnupg.net --recv-key 381BA480
+
+2. Update sources.list with:
+deb http://cran.md.tsukuba.ac.jp/bin/linux/debian wheezy-cran3/
+
+3.
+apt-get update
+
+4.
+apt-get install r-base r-base-dev r-recommended r-mathlib
+
+5.
+As root
+
+R
+
+install.packages('munsell')
+install.packages('scales')
+install.packages('ggplot2')
+install.packages('getopt')
+install.packages('doBy')
