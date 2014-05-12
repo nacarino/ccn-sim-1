@@ -17,7 +17,7 @@ data$FaceId <- factor(data$FaceId)
 data$Kilobits <- data$Kilobytes * 8
 data$Type = factor (data$Type)
 
-# exlude irrelevant types
+# exclude irrelevant types
 data = subset (data, Type %in% c("InInterests", "OutInterests", "InData", "OutData"))
 
 # combine stats from all faces

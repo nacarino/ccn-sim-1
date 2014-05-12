@@ -7,6 +7,7 @@
 library (ggplot2)
 library (scales)
 library (getopt)
+library (doBy)
 
 spec = matrix(c(
   'help', 'h', 0, "logical",
@@ -37,6 +38,3 @@ if (is.null(opt$verbose ) ) { opt$verbose = FALSE }
 #print some progress messages to stderr, if requested.
 if ( opt$verbose ) { write("writing...",stderr()); }
 
-#do some operation based on user input.
-cat(paste(rnorm(opt$count,mean=opt$mean,sd=opt$sd),collapse="\n"));
-cat("\n");

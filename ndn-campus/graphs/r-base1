@@ -8,9 +8,12 @@ deb http://cran.md.tsukuba.ac.jp/bin/linux/debian wheezy-cran3/
 apt-get update
 
 4.
-apt-get install r-base r-base-dev r-recommended r-mathlib
+apt-get install r-base r-base-dev r-recommended r-mathlib libjpeg62
 
 5.
+dpkg -i rstudio-0.98.507-amd64.deb
+
+6.
 As root
 
 R
