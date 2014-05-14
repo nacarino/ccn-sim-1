@@ -14,13 +14,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/csma-module.h"
-#include "ns3/internet-module.h"
+#include <ns3-dev/ns3/core-module.h>
+#include <ns3-dev/ns3/network-module.h>
+#include <ns3-dev/ns3/csma-module.h>
+#include <ns3-dev/ns3/internet-module.h>
 
-#include "ns3/applications-module.h"
-#include "ns3/ipv4-global-routing-helper.h"
+#include <ns3-dev/ns3/applications-module.h>
+#include <ns3-dev/ns3/ipv4-global-routing-helper.h>
 
 // Default Network Topology(second.cc from tutorial)
 //
@@ -70,10 +70,12 @@ main (int argc, char *argv[])
 
   NodeContainer csmaNodes = NodeContainer(csmaServer, csmaClient);
 
+  NS_LOG_INFO ("Create CSMA bus");
   //Install CSMA Devices
   NetDeviceContainer csmaDevices;
   csmaDevices = csma.Install (csmaNodes);
 
+  NS_LOG_INFO ("Install TCP/IP");
   // Install network stacks on the nodes
   InternetStackHelper stack;
   stack.Install (csmaNodes);
@@ -87,28 +89,29 @@ main (int argc, char *argv[])
   //Global static routing
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
+  NS_LOG_INFO ("Creating Sink Applications");
   // Create a packet sink on csmaServer
-  uint16_t port = 50000;
-  Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
-  PacketSinkHelper sinkhelper ("ns3::TcpSocketFactory", sinkLocalAddress);
+  uint16_t port = 1026;
+  PacketSinkHelper sinkhelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
   ApplicationContainer sinkApp = sinkhelper.Install (csmaServer);
-  sinkApp.Start (Seconds (0.0));
+  sinkApp.Start (Seconds (1.0));
   sinkApp.Stop (Seconds (10.0));
 
   Ptr<Ipv4> ipv4Client = (csmaServer.Get(0))->GetObject<Ipv4>();
 
-  Ptr<NetDevice> tmpDevice = ipv4Client->GetNetDevice(0);
-
   Ipv4InterfaceAddress::InterfaceAddressScope_e scope = Ipv4InterfaceAddress::GLOBAL;
 
-  Ipv4Address tmp = ipv4Client->SelectSourceAddress(tmpDevice, Ipv4Address (), scope);
+  Ipv4Address tmp = ipv4Client->SelectSourceAddress(ipv4Client->GetNetDevice(1), Ipv4Address (), scope);
 
+  NS_LOG_INFO ("Creating OnOff Applications");
   // Create the OnOff applications to send TCP to the server
   OnOffHelper clientHelper ("ns3::TcpSocketFactory", InetSocketAddress (tmp, port));
-  clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  clientHelper.SetAttribute("PacketSize", UintegerValue (32000));
+  //BulkSendHelper clientHelper ("ns3::TcpSocketFactory", InetSocketAddress (tmp, port));
+  //clientHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  //clientHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+  //clientHelper.SetAttribute("PacketSize", UintegerValue (32000));
   clientHelper.SetAttribute("DataRate", StringValue ("100Mbps"));
+  //clientHelper.SetAttribute("MaxBytes", UintegerValue (0));
 
   ApplicationContainer clientApps = clientHelper.Install (csmaClient);
   clientApps.Start (Seconds (1.0));

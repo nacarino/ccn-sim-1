@@ -625,7 +625,7 @@ int main (int argc, char *argv[])
 
 			uint32_t num_ifaces = ipv4Client->GetNInterfaces();
 
-			uint32_t random_iface = obtain_Num(0, num_ifaces-1);
+			uint32_t random_iface = obtain_Num(1, num_ifaces-1);
 
 			Ptr<NetDevice> tmpDevice = ipv4Client->GetNetDevice(random_iface);
 
