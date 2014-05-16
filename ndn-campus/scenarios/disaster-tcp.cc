@@ -37,6 +37,7 @@
 #include <ctime>
 #include <fstream>
 #include <iterator>
+#include <iostream>
 #include <string>
 #include <sys/time.h>
 #include <vector>
@@ -237,6 +238,7 @@ int main (int argc, char *argv[])
 	uint32_t clients = 1; // Number of clients in the network
 	uint32_t servers = 1; // Number of servers in the network
 	uint32_t networks = 1; // Number of additional nodes in the network
+	char results[250] = "results";
 
 	CommandLine cmd;
 	cmd.AddValue ("CN", "Number of total CNs [2]", nCN);
@@ -247,6 +249,7 @@ int main (int argc, char *argv[])
 	cmd.AddValue ("clients", "Total number of clients in the network", clients);
 	cmd.AddValue ("servers", "Total number of servers in the network", servers);
 	cmd.AddValue ("networks", "Number of networks in the simulation", networks);
+	cmd.AddValue ("results", "Directory to place results", results);
 	cmd.Parse (argc,argv);
 
 	/*if (nCN < 2)
@@ -889,20 +892,44 @@ int main (int argc, char *argv[])
 
 	char filename[250];
 
-	sprintf (filename, "results/disaster-tcp-rate-trace-%02d-%02d-%02d-%0*d.txt", networks, servers, clients, 12, contentsize);
+	// Print server nodes to file
+	sprintf(filename, "%s/disaster-tcp-servers-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
 
+	NS_LOG_INFO ("Printing node files");
+	std::ofstream serverFile;
+	serverFile.open (filename);
+	for (int i = 0; i < serverNodeIds.size(); i++) {
+		serverFile << serverNodeIds[i] << std::endl;
+	}
+	serverFile.close();
+
+	sprintf(filename, "%s/disaster-tcp-clients-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
+
+	std::ofstream clientFile;
+	clientFile.open (filename);
+	for (int i = 0; i < clientNodeIds.size(); i++) {
+		clientFile << clientNodeIds[i] << std::endl;
+	}
+	clientFile.close();
+
+	sprintf (filename, "%s/disaster-tcp-rate-trace-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
+
+	NS_LOG_INFO ("Printing IPv4 L3 Tracer");
 	// Install the ndnSIM tracers for IPv4
 	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4RateL3Tracer> > > rateTracers = Ipv4RateL3Tracer::InstallAll (filename, Seconds (1.0));
 
-	sprintf (filename, "results/disaster-tcp-app-delays-trace-%02d-%02d-%02d-%0*d.txt", networks, servers, clients, 12, contentsize);
+	sprintf (filename, "%s/disaster-tcp-app-delays-trace-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
 
+	NS_LOG_INFO ("Printing IPv4 Seq Apps Tracer");
 	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4SeqsAppTracer> > > seqApps = Ipv4SeqsAppTracer::InstallAll(filename);
 
-	sprintf (filename, "results/disaster-tcp-drop-trace-%02d-%02d-%02d-%0*d.txt", networks, servers, clients, 12, contentsize);
+	sprintf (filename, "%s/disaster-tcp-drop-trace-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
+	NS_LOG_INFO ("Printing L2 Drop Tracer");
 	L2RateTracer::InstallAll (filename, Seconds (0.5));
 
 	Simulator::Stop (Seconds (20.0));
 	Simulator::Run ();
 	Simulator::Destroy ();
+
 	return 0;
 }

@@ -110,11 +110,11 @@ if (setfile) {
   }
 } else {
   if (opt$node > -1) {
-    outpng = sprintf("%s-%02d-%02d-%02d-%*d-%d.png", noext,
+    outpng = sprintf("%s-%02d-%03d-%03d-%*d-%d.png", noext,
                    opt$networks, opt$producers, opt$clients,
                    12, opt$contentsize, opt$node)
   } else {
-    outpng = sprintf("%s-%02d-%02d-%02d-%*d.png", noext,
+    outpng = sprintf("%s-%02d-%03d-%03d-%*d.png", noext,
                      opt$networks, opt$producers, opt$clients,
                      12, opt$contentsize)
   }

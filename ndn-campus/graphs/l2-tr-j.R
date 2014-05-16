@@ -85,7 +85,7 @@ if (length(sel) != 0) {
   if (setfile) {
     outpng = sprintf("%s.png", noext)
   } else {
-    outpng = sprintf("%s-%02d-%02d-%02d-%*d.png", noext,
+    outpng = sprintf("%s-%02d-%03d-%03d-%*d.png", noext,
                      opt$networks, opt$producers, opt$clients,
                      12, opt$contentsize)
   }
