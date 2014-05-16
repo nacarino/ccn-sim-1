@@ -89,8 +89,7 @@ if (length(sel) != 0) {
                      opt$networks, opt$producers, opt$clients,
                      12, opt$contentsize)
   }
-  
-  
+    
   png (outpng, width=1024, height=768)
   print (g.all)
   x = dev.off ()
