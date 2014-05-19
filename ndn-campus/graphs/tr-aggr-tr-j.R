@@ -50,6 +50,14 @@ if (is.null(opt$tcp) && is.null(opt$ndn)) {
   opt$ndn = FALSE
 }
 
+if (is.null(opt$tcp)) {
+  opt$tcp = FALSE
+}
+
+if (is.null(opt$ndn)) {
+  opt$ndn = FALSE
+} 
+
 #print some progress messages to stderr, if requested.
 if ( opt$verbose ) { write("writing...",stderr()); }
 
