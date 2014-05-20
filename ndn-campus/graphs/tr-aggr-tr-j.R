@@ -18,7 +18,7 @@ spec = matrix(c(
   'file', 'f', 1, "character",
   'node', 'e', 1, "integer",
   'tcp', 't', 0, "logical",
-  'ndn', 'd', 0, "logical"
+  'ndn', 'x', 0, "logical"
 ), byrow=TRUE, ncol=4);
 
 opt = getopt(spec);
