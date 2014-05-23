@@ -37,6 +37,8 @@ data$Node = factor (data$Node)
 data$Kilobits <- data$Kilobytes * 8
 data$Type = factor (data$Type)
 
+intdata = data
+
 if (! opt$tcp && ! opt$ndn) {
   cat("No rate data type used! Check -t and -x!\n")
   quit('yes')
@@ -44,7 +46,8 @@ if (! opt$tcp && ! opt$ndn) {
 
 # exclude irrelevant types - CCN
 if (opt$ndn) {
-  data = subset (data, Type %in% c("InInterests", "OutInterests", "InData", "OutData"))
+  data = subset (data, Type %in% c("InData", "OutData"))
+  intdata = subset(intdata, Type %in% c("InInterests", "OutInterests"))
 }
 
 # exclude irrelevant types - TCP/IP
@@ -58,7 +61,7 @@ if (opt$node >= 0) {
   data = subset (data, Node %in% opt$node)
   
   if (dim(data)[1] == 0) {
-    cat(sprintf("There is no Node %d in this trace!", opt$node))
+    cat(sprintf("There is no Node %d in this trace!\n", opt$node))
     quit("yes")
   }
   name = sprintf("Data rate of Node %d of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
@@ -86,24 +89,53 @@ noext = gsub("\\..*", "", filename)
 
 outpng = ""
 # The output png
-if (setfile) {
-  if (opt$node > -1) {
-    outpng = sprintf("%s-%d.png", noext, opt$node)
-  } else {
-    outpng = sprintf("%s.png", noext)
-  }
+if (opt$node > -1) {
+  outpng = sprintf("%s-%d.png", noext, opt$node)
 } else {
-  if (opt$node > -1) {
-    outpng = sprintf("%s-%02d-%03d-%03d-%*d-%d.png", noext,
-                   opt$networks, opt$producers, opt$clients,
-                   12, opt$contentsize, opt$node)
-  } else {
-    outpng = sprintf("%s-%02d-%03d-%03d-%*d.png", noext,
-                     opt$networks, opt$producers, opt$clients,
-                     12, opt$contentsize)
-  }
+  outpng = sprintf("%s.png", noext)
 }
 
 png (outpng, width=1024, height=768)
 print (g.all)
 x = dev.off ()
+
+# Print the Interest information if the data is from CCN
+if (opt$ndn) {
+  
+  intname = ""
+  # Filter for a particular node
+  if (opt$node >= 0) {
+    intdata = subset (intdata, Node %in% opt$node)
+    
+    if (dim(data)[1] == 0) {
+      cat(sprintf("There is no Node %d in this trace!\n", opt$node))
+      quit("yes")
+    }
+    intname = sprintf("Interest rate of Node %d of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
+                   opt$node, opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
+  } else {
+    intname = sprintf("Interest rate of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
+                   opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
+  }
+  
+  intdata.combined = summaryBy (. ~ Time + Node + Type, data=intdata, FUN=sum)
+  
+  # graph rates on all nodes in Kilobits
+  g.int <- ggplot (intdata.combined) +
+    geom_line (aes (x=Time, y=Kilobits.sum, color=Type), size=1) +
+    ggtitle (intname) +
+    ylab ("Rate [Kbits/s]") +
+    facet_wrap (~ Node)
+  
+  outInpng = ""
+  # The output png
+  if (opt$node >= 0) {
+    outInpng = sprintf("%s-%d-in.png", noext, opt$node)
+  } else {
+    outInpng = sprintf("%s-in.png", noext)
+  }
+  
+  png (outInpng, width=1024, height=768)
+  print (g.int)
+  x = dev.off ()
+}

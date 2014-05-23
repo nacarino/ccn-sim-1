@@ -78,15 +78,7 @@ if (length(sel) != 0) {
   # Get rid of the extension
   noext = gsub("\\..*", "", filename)
   
-  outpng = ""
-  # The output png
-  if (setfile) {
-    outpng = sprintf("%s.png", noext)
-  } else {
-    outpng = sprintf("%s-%02d-%03d-%03d-%*d.png", noext,
-                     opt$networks, opt$producers, opt$clients,
-                     12, opt$contentsize)
-  }
+  outpng = sprintf("%s.png", noext)
     
   png (outpng, width=1024, height=768)
   print (g.all)
