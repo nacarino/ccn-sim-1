@@ -23,7 +23,9 @@ option_list <- list (
   make_option(c("-f", "--file"), type="character", default="results/drop-trace.txt",
               help="File which holds the raw drop data.\n\t\t[Default \"%default\"]"),
   make_option(c("-e", "--node"), type="integer", default=-1,
-              help="Node data to graph. Default graphs all")
+              help="Node data to graph. Default graphs all"),
+  make_option(c("-o", "--output"), type="character", default=".",
+              help="Output directory for graphs.\n\t\t[Default \"%default\"]")
   )
 
 # Load the parser
@@ -78,7 +80,7 @@ if (length(sel) != 0) {
   # Get rid of the extension
   noext = gsub("\\..*", "", filename)
   
-  outpng = sprintf("%s.png", noext)
+  outpng = sprintf("%s/%s.png", opt$output, noext)
     
   png (outpng, width=1024, height=768)
   print (g.all)

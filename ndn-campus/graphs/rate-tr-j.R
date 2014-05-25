@@ -20,14 +20,16 @@ option_list <- list (
   make_option(c("-n", "--networks"), type="integer", default=1,
               help="Number of networks which will be displayed on the graph title."),
   make_option(c("-f", "--file"), type="character", default="results/rate-trace.txt",
-              help="File which holds the raw drop data.\n\t\t[Default \"%default\"]"),
+              help="File which holds the raw rate data.\n\t\t[Default \"%default\"]"),
   make_option(c("-e", "--node"), type="integer", default=-1,
               help="Node data to graph. Default graphs all"),
   make_option(c("-t", "--tcp"), action="store_true", default=FALSE,
               help="Tell the script that the file contains TCP data"),
   make_option(c("-x", "--ndn"), action="store_true", default=FALSE,
-              help="Tell the script that the file contains CCN data")
-)
+              help="Tell the script that the file contains CCN data"),
+  make_option(c("-o", "--output"), type="character", default=".",
+              help="Output directory for graphs.\n\t\t[Default \"%default\"]")
+  )
 
 # Load the parser
 opt = parse_args(OptionParser(option_list=option_list, description="Creates graphs from ndnSIM L3 Data rate Tracer data"))
@@ -90,9 +92,9 @@ noext = gsub("\\..*", "", filename)
 outpng = ""
 # The output png
 if (opt$node > -1) {
-  outpng = sprintf("%s-%d.png", noext, opt$node)
+  outpng = sprintf("%s/%s-%d.png", opt$output, noext, opt$node)
 } else {
-  outpng = sprintf("%s.png", noext)
+  outpng = sprintf("%s/%s.png", opt$output, noext)
 }
 
 png (outpng, width=1024, height=768)
@@ -130,9 +132,9 @@ if (opt$ndn) {
   outInpng = ""
   # The output png
   if (opt$node >= 0) {
-    outInpng = sprintf("%s-%d-in.png", noext, opt$node)
+    outInpng = sprintf("%s/%s-%d-in.png", opt$output, noext, opt$node)
   } else {
-    outInpng = sprintf("%s-in.png", noext)
+    outInpng = sprintf("%s/%s-in.png", opt$output, noext)
   }
   
   png (outInpng, width=1024, height=768)
