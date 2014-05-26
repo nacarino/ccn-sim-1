@@ -44,7 +44,7 @@ nNodes = length(levels(data$Node))[1]
 
 N = nTimes*nNodes
 
-df = data.frame(Time=rep(NA, N), Node=rep(NA, N), Hit=rep(NA,N), Miss=rep(NA,N), Ratio=rep(NA,N))
+df = data.frame(Time=rep(NA, N), Node=rep(NA, N), Hit=rep(NA,N), Miss=rep(NA,N), HitRatio=rep(NA,N), MissRatio=rep(NA,N))
 
 pos = 0
 
@@ -62,12 +62,14 @@ for (i in 1:nTimes) {
     m = misses$Packets
     denom = h + m
     
-    res = 0
+    hR = 0
+    mR = 0
     if (denom > 0) {
-      res = h / denom
+      hR = h / denom
+      hR = m / denom
     }
     
-    df[pos,] = c(i, j, h, m, res)
+    df[pos,] = c(i, j, h, m, hR, mR)
     pos = pos + 1
   }
 }
@@ -101,21 +103,21 @@ if (length(sel) != 0) {
       cat(sprintf("There is no Node %d in this trace!", opt$node))
       quit("yes")
     }
-    name = sprintf("Cache Hits on Node %d of Campus Network, %d campuses, %d server, %d client",
+    name = sprintf("Cache Hit Rates %% on Node %d of Campus Network, %d campuses, %d server, %d client",
                    opt$node, opt$networks, opt$producers, opt$clients)
   } else {
     # Filter with sel
     df = subset(df, Node %in% sel)
     
-    name = sprintf("Cache Hits for Campus Network, %d campuses, %d server, %d client",
+    name = sprintf("Cache Hit Rates %% for Campus Network, %d campuses, %d server, %d client",
                    opt$networks, opt$producers, opt$clients)
   }
   
   # graph cache hit rates on all nodes
   g.all <- ggplot (df, aes(colour=Action)) +
-    geom_line(aes (x=Time, y=Hit, colour="Hit")) + 
-    geom_line(aes (x=Time, y=Miss, colour="Miss")) +
-    ylab ("Cache Hit/Miss Rate") +
+    geom_line(aes (x=Time, y=HitRatio, colour="Hit")) + 
+    geom_line(aes (x=Time, y=MissRatio, colour="Miss")) +
+    ylab ("Cache Hit/Miss Rate (%)") +
     ggtitle (name) +
     facet_wrap (~Node) +
     theme_bw ()
