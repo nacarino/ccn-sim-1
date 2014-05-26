@@ -22,8 +22,8 @@ option_list <- list (
               help="Number of networks which will be displayed on the graph title."),
   make_option(c("-f", "--file"), type="character", default="results/drop-trace.txt",
               help="File which holds the raw drop data.\n\t\t[Default \"%default\"]"),
-  make_option(c("-e", "--node"), type="integer", default=-1,
-              help="Node data to graph. Default graphs all"),
+  make_option(c("-e", "--node"), type="character", default="",
+              help="Node data to graph. Can be a comma separated list.\n\t\tDefault graphs data for all nodes."),
   make_option(c("-o", "--output"), type="character", default=".",
               help="Output directory for graphs.\n\t\t[Default \"%default\"]")
   )
@@ -45,17 +45,19 @@ for (i in 0:(length(levels(data$Node))-1)) {
   }
 }
 
+filnodes = unlist(strsplit(opt$node, ","))
+
 if (length(sel) != 0) {
   
   name = ""
-  if (opt$node >= 0) {
-    data = subset (data, Node %in% opt$node)
+  if (nchar(opt$node) > 0) {
+    data = subset (data, Node %in% filnodes)
     
     if (dim(data)[1] == 0) {
-      cat(sprintf("There is no Node %d in this trace!", opt$node))
+      cat(sprintf("There is no Node %s in this trace!", opt$node))
       quit("yes")
     }
-    name = sprintf("Drop of Node %d of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
+    name = sprintf("Drop of Node %s of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
                    opt$node, opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
   } else {
     # Filter with sel
@@ -80,7 +82,12 @@ if (length(sel) != 0) {
   # Get rid of the extension
   noext = gsub("\\..*", "", filename)
   
-  outpng = sprintf("%s/%s.png", opt$output, noext)
+  # The output png
+  if (nchar(opt$node) > 0) {
+    outpng = sprintf("%s/%s-%s.png", opt$output, noext, paste(filnodes, sep="", collapse="_"))
+  } else {
+    outpng = sprintf("%s/%s.png", opt$output, noext)
+  }
     
   png (outpng, width=1024, height=768)
   print (g.all)

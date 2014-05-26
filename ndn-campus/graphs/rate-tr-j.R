@@ -21,8 +21,8 @@ option_list <- list (
               help="Number of networks which will be displayed on the graph title."),
   make_option(c("-f", "--file"), type="character", default="results/rate-trace.txt",
               help="File which holds the raw rate data.\n\t\t[Default \"%default\"]"),
-  make_option(c("-e", "--node"), type="integer", default=-1,
-              help="Node data to graph. Default graphs all"),
+  make_option(c("-e", "--node"), type="character", default="",
+              help="Node data to graph. Can be a comma separated list.\n\t\tDefault graphs data for all nodes."),
   make_option(c("-t", "--tcp"), action="store_true", default=FALSE,
               help="Tell the script that the file contains TCP data"),
   make_option(c("-x", "--ndn"), action="store_true", default=FALSE,
@@ -58,15 +58,18 @@ if (opt$tcp) {
 }
 
 name = ""
+filnodes = unlist(strsplit(opt$node, ","))
+
 # Filter for a particular node
-if (opt$node >= 0) {
-  data = subset (data, Node %in% opt$node)
+if (nchar(opt$node) > 0) {
+  
+  data = subset (data, Node %in% filnodes)
   
   if (dim(data)[1] == 0) {
-    cat(sprintf("There is no Node %d in this trace!\n", opt$node))
+    cat(sprintf("There is no Node %s in this trace!\n", opt$node))
     quit("yes")
   }
-  name = sprintf("Data rate of Node %d of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
+  name = sprintf("Data rate of Node %s of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
                  opt$node, opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
 } else {
   name = sprintf("Data rate of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
@@ -91,8 +94,8 @@ noext = gsub("\\..*", "", filename)
 
 outpng = ""
 # The output png
-if (opt$node > -1) {
-  outpng = sprintf("%s/%s-%d.png", opt$output, noext, opt$node)
+if (nchar(opt$node) > 0) {
+  outpng = sprintf("%s/%s-%s.png", opt$output, noext, paste(filnodes, sep="", collapse="_"))
 } else {
   outpng = sprintf("%s/%s.png", opt$output, noext)
 }
@@ -106,14 +109,14 @@ if (opt$ndn) {
   
   intname = ""
   # Filter for a particular node
-  if (opt$node >= 0) {
-    intdata = subset (intdata, Node %in% opt$node)
+  if (nchar(opt$node) > 0) {
+    intdata = subset (intdata, Node %in% filnodes)
     
     if (dim(data)[1] == 0) {
-      cat(sprintf("There is no Node %d in this trace!\n", opt$node))
+      cat(sprintf("There is no Node %s in this trace!\n", opt$node))
       quit("yes")
     }
-    intname = sprintf("Interest rate of Node %d of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
+    intname = sprintf("Interest rate of Node %s of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
                    opt$node, opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
   } else {
     intname = sprintf("Interest rate of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
@@ -131,8 +134,8 @@ if (opt$ndn) {
   
   outInpng = ""
   # The output png
-  if (opt$node >= 0) {
-    outInpng = sprintf("%s/%s-%d-in.png", opt$output, noext, opt$node)
+  if (nchar(opt$node) > 0) {
+    outInpng = sprintf("%s/%s-%s-in.png", opt$output, noext, paste(filnodes, sep="", collapse="_"))
   } else {
     outInpng = sprintf("%s/%s-in.png", opt$output, noext)
   }

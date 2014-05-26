@@ -20,8 +20,8 @@ option_list <- list (
               help="Number of networks which will be displayed on the graph title."),
   make_option(c("-f", "--file"), type="character", default="results/cs-trace.txt",
               help="File which holds the raw content store data.\n\t\t[Default \"%default\"]"),
-  make_option(c("-e", "--node"), type="integer", default=-1,
-              help="Node data to graph. Default graphs all"),
+  make_option(c("-e", "--node"), type="character", default="",
+              help="Node data to graph. Can be a comma separated list.\n\t\tDefault graphs data for all nodes."),
   make_option(c("-o", "--output"), type="character", default=".",
               help="Output directory for graphs.\n\t\t[Default \"%default\"]")
   )
@@ -90,17 +90,18 @@ for (i in 0:(nNodes-1)) {
   }
 }
 
+filnodes = unlist(strsplit(opt$node, ","))
 
 if (length(sel) != 0) {
   name = ""
   
   df$Node = factor (df$Node)
   
-  if (opt$node >= 0) {
-    df = subset (df, Node %in% opt$node)
+  if (nchar(opt$node) > 0) {
+    df = subset (df, Node %in% filnodes)
     
     if (dim(data)[1] == 0) {
-      cat(sprintf("There is no Node %d in this trace!", opt$node))
+      cat(sprintf("There is no Node %s in this trace!", opt$node))
       quit("yes")
     }
     name = sprintf("Cache Hit Rates %% on Node %d of Campus Network, %d campuses, %d server, %d client",
@@ -129,8 +130,8 @@ if (length(sel) != 0) {
   noext = gsub("\\..*", "", filename)
   
   # The output png
-  if (opt$node > -1) {
-    outpng = sprintf("%s/%s-%d.png", opt$output, noext, opt$node)
+  if (nchar(opt$node) > 0) {
+    outpng = sprintf("%s/%s-%s.png", opt$output, noext, paste(filnodes, sep="", collapse="_"))
   } else {
     outpng = sprintf("%s/%s.png", opt$output, noext)
   }
