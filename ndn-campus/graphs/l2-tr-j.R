@@ -38,10 +38,20 @@ data$Type = factor (data$Type)
 
 sel = c()
 
+snode = levels(data$Node)
+lnode = length(snode)
+
 # Check that the mean is above 0, if not discard graphing
-for (i in 0:(length(levels(data$Node))-1)) {
-  if (mean(data[data$Node %in% i,]$Kilobytes) > 0) {
-    sel = append(sel, i)
+for (i in 1:lnode) {
+  
+  # Filter for the node
+  tdat = subset(data, Node %in% snode[i])
+  
+  # Check that 
+  if (length(tdat) != 0) {
+    if (mean(tdat$Kilobytes) > 0) {
+      sel = append(sel, snode[i])
+    }
   }
 }
 
@@ -61,7 +71,7 @@ if (length(sel) != 0) {
                    opt$node, opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
   } else {
     # Filter with sel
-    data = data[data$Node %in% sel]
+    data = subset(data, Node %in% sel)
     
     name = sprintf("Drop rate of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
                    opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))

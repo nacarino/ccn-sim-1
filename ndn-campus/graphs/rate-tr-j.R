@@ -81,8 +81,8 @@ data.combined = summaryBy (. ~ Time + Node + Type, data=data, FUN=sum)
 
 # graph rates on all nodes in Kilobits
 g.all <- ggplot (data.combined, aes(x=Time, y=Kilobits.sum, color=Type)) +
-  geom_line(aes (linetype=Type), size=1) + 
-  geom_point(aes (shape=Type), size=4) + 
+  geom_line(aes (linetype=Type), size=0.5) + 
+  geom_point(aes (shape=Type), size=1) + 
   ggtitle (name) +
   ylab ("Rate [Kbits/s]") +
   facet_wrap (~ Node)
@@ -128,8 +128,8 @@ if (opt$ndn) {
   
   # graph rates on all nodes in Kilobits
   g.int <- ggplot (intdata.combined, aes(x=Time, y=Kilobits.sum, color=Type)) +
-    geom_line(aes (linetype=Type), size=1) + 
-    geom_point(aes (shape=Type), size=4) +  
+    geom_line(aes (linetype=Type), size=0.5) + 
+    geom_point(aes (shape=Type), size=1) +  
     ggtitle (intname) +
     ylab ("Rate [Kbits/s]") +
     facet_wrap (~ Node)

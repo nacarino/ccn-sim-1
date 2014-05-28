@@ -46,60 +46,60 @@ intdata = data
 
 # exclude irrelevant types - CCN
 if (opt$ndn) {
-  data = subset (data, Type %in% c("InData", "OutData"))
-  intdata = subset(intdata, Type %in% c("InInterests", "OutInterests"))
+  data = subset (data, Type %in% c("InData", "OutData") & Packets > 0)
+  intdata = subset(intdata, Type %in% c("InInterests", "OutInterests") & Packets > 0)
 }
 
 # exclude irrelevant types - TCP/IP
 if (opt$tcp) {
-  data = subset (data, Type %in% c("In", "Out", "Drop"))
+  data = subset (data, Type %in% c("In", "Out", "Drop") & Packets > 0)
 }
 
 name = sprintf("Network average throughput of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
                opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
-
-
+  
 # combine stats from all faces
 data.combined = summaryBy (. ~ Time + Type, data=data, FUN=mean)
-
+  
 # graph rates on all nodes in Kilobits
 g.all <- ggplot (data.combined, aes (x=Time, y=Kilobits.mean, color=Type)) +
   geom_line(aes (linetype=Type), size=1) + 
   geom_point(aes (shape=Type), size=4) + 
   ggtitle (name) +
   ylab ("Rate [Kbits/s]")
-
+  
 # Get the basename of the file
 tmpname = strsplit(opt$file, "/")[[1]]
 filename = tmpname[length(tmpname)]
+  
 # Get rid of the extension
 noext = gsub("\\..*", "", filename)
-
+  
 outpng = ""
 # The output png
 outpng = sprintf("%s/%s-throughput.png", opt$output, noext)
-
+  
 png (outpng, width=1024, height=768)
 print (g.all)
 x = dev.off ()
-
+  
 if (opt$ndn) {
   intname = sprintf("Interest average throughput of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
                     opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))
-  
+    
   intdata.combined = summaryBy (. ~ Time + Type, data=intdata, FUN=mean)
-  
+    
   # graph rates on all nodes in Kilobits
   g.int <- ggplot (intdata.combined, aes (x=Time, y=Kilobits.mean, color=Type)) +
     geom_line(aes (linetype=Type), size=1) + 
     geom_point(aes (shape=Type), size=4) +
     ggtitle (intname) +
     ylab ("Rate [Kbits/s]")
-  
+    
   outInpng = ""
   # The output png
   outInpng = sprintf("%s/%s-throughput-in.png", opt$output, noext)
-  
+    
   png (outInpng, width=1024, height=768)
   print (g.int)
   x = dev.off ()
