@@ -652,12 +652,8 @@ int main (int argc, char *argv[])
 
 			sources[sources.size()-1].SetAttribute ("MaxBytes", UintegerValue (contentsize));
               
-            ExponentialVariable ontime(0.99); 
-            ExponentialVariable offtime(0.01); 
-            RandomVariableValue onontime = RandomVariableValue (ontime); 
-            RandomVariableValue offofftime = RandomVariableValue (offtime); 
-            sources[sources.size()-1].SetAttribute ("OnTime",  onontime); 
-            sources[sources.size()-1].SetAttribute ("OffTime", offofftime);
+            sources[sources.size()-1].SetAttribute ("OnTime",  StringValue ("ns3::ExponentialRandomVariable[Mean=0.99]"));
+            sources[sources.size()-1].SetAttribute ("OffTime", StringValue ("ns3::ExponentialRandomVariable[Mean=0.01]"));
 		}
 		else
 		{
