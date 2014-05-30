@@ -98,7 +98,7 @@ std::vector<Ptr<Node> > getVector(NodeContainer node) {
 
 	std::vector<Ptr<Node> > nodemutable;
 
-	// Copy the global list into a mutable vector
+	// Copy the Node pointers into a mutable vector
 	for (uint32_t i = 0; i < size; i++) {
 		nodemutable.push_back (node.Get(i));
 	}
@@ -108,20 +108,21 @@ std::vector<Ptr<Node> > getVector(NodeContainer node) {
 	return nodemutable;
 }
 
-std::vector<Ptr<Node> > assignNodes(std::vector<Ptr<Node> > nodes, int toAsig, int left) {
+// Randomly picks toAsig nodes from a vector that has nodesAvailable in size
+std::vector<Ptr<Node> > assignNodes(std::vector<Ptr<Node> > nodes, int toAsig, int nodesAvailable) {
 
 	char buffer[250];
 
-	sprintf(buffer, "assignNodes: to assign %d, left %d", toAsig, left);
+	sprintf(buffer, "assignNodes: to assign %d, left %d", toAsig, nodesAvailable);
 
 	NS_LOG_INFO (buffer);
 
 	std::vector<Ptr<Node> > assignedNodes;
 
-	uint32_t assignMin = left - toAsig;
+	uint32_t assignMin = nodesAvailable - toAsig;
 
 	// Apply Fisher-Yates shuffle
-	for (uint32_t i = left; i > assignMin; i--)
+	for (uint32_t i = nodesAvailable; i > assignMin; i--)
 	{
 		// Get a random number
 		int toSwap = obtain_Num (0, i);
@@ -134,8 +135,7 @@ std::vector<Ptr<Node> > assignNodes(std::vector<Ptr<Node> > nodes, int toAsig, i
 	return assignedNodes;
 }
 
-// Obtains a random list of clients and servers. Must be run once all nodes have been
-// created to function correctly
+// Obtains a random list of num_clients clients and num_servers servers from a NodeContainer
 tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignClientsandServers(NodeContainer nodes, int num_clients, int num_servers) {
 
 	char buffer[250];
@@ -143,17 +143,14 @@ tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignClientsandServers
 	// Get the number of nodes in the simulation
 	uint32_t size = nodes.GetN ();
 
-	sprintf(buffer, "assignClientsandServers, we have %d nodes", size);
-
-	NS_LOG_INFO (buffer);
-
-	sprintf(buffer, "assignClientsandServers, %d clients, %d servers", num_clients, num_servers);
+	sprintf(buffer, "assignClientsandServers, we have %d nodes, will assign %d clients and %d servers", size, num_clients, num_servers);
 
 	NS_LOG_INFO (buffer);
 
 	// Check that we haven't asked for a scenario where we don't have enough Nodes to fulfill
 	// the requirements
 	if (num_clients + num_servers > size) {
+		NS_LOG_INFO("assignClientsandServer, required number bigger than container size!");
 		return tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > ();
 	}
 
@@ -163,31 +160,34 @@ tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignClientsandServers
 
 	std::vector<Ptr<Node> > ServerContainer = assignNodes(nodemutable, num_servers, size-1-num_clients);
 
-/*	// Apply Fisher-Yates shuffle - start with clients
-	for (uint32_t i = size-1; i > clientMin; i--) {
-		// Get a random number
-		int toSwap = obtain_Num (0, i);
-		// Push into the client container the number we got from the global vector
-		ClientContainer.push_back (nodemutable[toSwap]);
-		// Swap the obtained number with the last element
-		std::swap (nodemutable[toSwap], nodemutable[i]);
-	}
-
-	// Apply Fisher-Yates shuffle - servers
-	for (uint32_t i = clientMin; i > serverMin; i--) {
-		// Get a random number
-		int toSwap = obtain_Num(0, i);
-		// Push into the client container the number we got from the global vector
-		ServerContainer.push_back(nodemutable[toSwap]);
-		// Swap the obtained number with the last element
-		std::swap (nodemutable[toSwap], nodemutable[i]);
-	}*/
-
 	return tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > (ClientContainer, ServerContainer);
 }
 
+// Returns a randomly picked num of Nodes from nodes Container
+std::vector<Ptr<Node> > assignWithinContainer (NodeContainer nodes, int num)
+{
+	char buffer[250];
+
+	// Get the number of nodes in the simulation
+	uint32_t size = nodes.GetN ();
+
+	sprintf(buffer, "assignWithinContainer, we have %d nodes, will assign %d", size, num);
+
+	NS_LOG_INFO (buffer);
+
+	if (num > size) {
+		NS_LOG_INFO("assignWithinContainer, required number bigger than container size!");
+		return std::vector<Ptr<Node> >();
+	}
+
+	std::vector<Ptr<Node> > nodemutable = getVector(nodes);
+
+	return assignNodes(nodemutable, num, size-1);
+
+}
+
 // Function to get a complete Random setup
-tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > completeRandomSetup(int num_clients, int num_servers) {
+tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignCompleteRandom(int num_clients, int num_servers) {
 
 	// Obtain all the node used in the simulation
 	NodeContainer global = NodeContainer::GetGlobal ();
@@ -597,7 +597,11 @@ int main (int argc, char *argv[])
 	// With the network assigned, time to randomly obtain clients and servers
 	NS_LOG_INFO ("Obtaining the clients and servers");
 
-	/*// Container for all the nodes where you can place a client
+	/////////////////////////////////////////////////////////////////////////////////
+
+	// If you want the servers and the clients to be filtered, use the following code
+
+	// Container for all the nodes where you can place a client
 	NodeContainer assignableClients;
 
 	// Go through the campuses
@@ -621,14 +625,35 @@ int main (int argc, char *argv[])
 				assignableClients.Add (nodes_net2LAN[i][j][k]);
 			}
 		}
-	}*/
+	}
 
-	// Obtain the random lists of server and clients using the whole network
-	tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > t = completeRandomSetup(clients, servers);
+	// Container for all the nodes where you can place a client
+	NodeContainer assignableServers;
+
+	// Go through the campuses
+	for (int i = 0; i < nCN; i++)
+	{
+		// Go through NET1
+		for (int j = 0; j < 6; j++) {
+			assignableServers.Add (nodes_net1[i][j]);
+		}
+	}
+
+	std::vector<Ptr<Node> > clientVector = assignWithinContainer(assignableClients, clients);
+	std::vector<Ptr<Node> > serverVector = assignWithinContainer(assignableServers, servers);
+
+	/////////////////////////////////////////////////////////////////////////////////
+
+	// If you want a completely random setup, you use the following code
+
+	/*// Obtain the random lists of server and clients using the whole network
+	tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > t = assignCompleteRandom(clients, servers);
 
 	// Separate the tuple into clients and servers
 	std::vector<Ptr<Node> > clientVector = t.get<0> ();
-	std::vector<Ptr<Node> > serverVector = t.get<1> ();
+	std::vector<Ptr<Node> > serverVector = t.get<1> ();*/
+
+	/////////////////////////////////////////////////////////////////////////////////
 
 	NodeContainer clientNodes;
 	std::vector<uint32_t> clientNodeIds;
