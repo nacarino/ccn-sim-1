@@ -91,8 +91,8 @@ br::mt19937_64 gen;
 // Obtains a random number from a uniform distribution between min and max.
 // Must seed number generator to ensure randomness at runtime.
 int obtain_Num(int min, int max) {
-	br::uniform_int_distribution<> dist(min, max);
-	return dist(gen);
+    br::uniform_int_distribution<> dist(min, max);
+    return dist(gen);
 }
 
 // Obtains a random list of clients and servers. Must be run once all nodes have been
@@ -113,7 +113,7 @@ tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignClientsandServers
 
 	sprintf(buffer, "assignClientsandServers, %d clients, %d servers", num_clients, num_servers);
 
-	// Check that we haven't asked for a scenario where we don't have enough Nodes to fufill
+	// Check that we haven't asked for a scenario where we don't have enough Nodes to fulfill
 	// the requirements
 	if (num_clients + num_servers > size) {
 		return tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > ();
@@ -165,10 +165,10 @@ class Array2D
 {
 public:
 	Array2D (const size_t x, const size_t y) : p (new T*[x]), m_xMax (x)
-{
+	{
 		for (size_t i = 0; i < m_xMax; i++)
 			p[i] = new T[y];
-}
+	}
 
 	~Array2D (void)
 	{
@@ -193,10 +193,10 @@ class Array3D
 {
 public:
 	Array3D (const size_t x, const size_t y, const size_t z) : p (new Array2D<T>*[x]), m_xMax (x)
-{
+	{
 		for (size_t i = 0; i < m_xMax; i++)
 			p[i] = new Array2D<T> (y, z);
-}
+	}
 
 	~Array3D (void)
 	{
@@ -228,23 +228,24 @@ int main (int argc, char *argv[])
 
 	int nCN = 3, nLANClients = 42;
 	bool nix = true;
-
+	
 	// Char array for output strings
 	char buffer[250];
 
 	// These are our scenario arguments
-	uint32_t contentsize = 0; // Size in bytes of the content to transfer
-	uint32_t clients = 1; // Number of clients in the network
+	uint32_t contentsize = 10; // Size in bytes of the content to transfer
+	uint32_t clients = 15; // Number of clients in the network
 	uint32_t servers = 1; // Number of servers in the network
 	uint32_t networks = 1; // Number of additional nodes in the network
-	char results[250] = "results";
+
+        char results[250] = "results";
 
 	CommandLine cmd;
 	cmd.AddValue ("CN", "Number of total CNs [2]", nCN);
 	cmd.AddValue ("LAN", "Number of nodes per LAN [42]", nLANClients);
 	cmd.AddValue ("NIX", "Toggle nix-vector routing", nix);
 	cmd.AddValue ("contentsize",
-			"Total number of bytes for application to send", contentsize);
+				"Total number of bytes for application to send", contentsize);
 	cmd.AddValue ("clients", "Total number of clients in the network", clients);
 	cmd.AddValue ("servers", "Total number of servers in the network", servers);
 	cmd.AddValue ("networks", "Number of networks in the simulation", networks);
@@ -256,12 +257,12 @@ int main (int argc, char *argv[])
 				<< std::endl;
 		return 1;
 	}*/
-
-
+    
+		
 	// Overwrite nCN with networks
-	nCN = networks;
-
-	std::cout << "Number of CNs: " << nCN << ", LAN nodes: " << nLANClients << std::endl;
+    nCN = networks;
+	
+    std::cout << "Number of CNs: " << nCN << ", LAN nodes: " << nLANClients << std::endl;
 
 	Array2D<NodeContainer> nodes_net0(nCN, 3);
 	Array2D<NodeContainer> nodes_net1(nCN, 6);
@@ -568,7 +569,7 @@ int main (int argc, char *argv[])
 
 	// Make sure to seed our random
 	gen.seed(std::time(0));
-
+	
 	// With the network assigned, time to randomly obtain clients and servers
 	NS_LOG_INFO ("Obtaining the clients and servers");
 	// Obtain the random lists of server and clients
@@ -582,37 +583,37 @@ int main (int argc, char *argv[])
 	std::vector<uint32_t> clientNodeIds;
 	NodeContainer serverNodes;
 	std::vector<uint32_t> serverNodeIds;
-
+	
 	// We have to manually introduce the Ptr<Node> to the NodeContainers
-	// We do this to make them easier to control later
-	for (uint32_t i = 0; i < clients ; i++)
-	{
-		Ptr<Node> tmp = clientVector[i];
+		// We do this to make them easier to control later
+		for (uint32_t i = 0; i < clients ; i++)
+		{
+			Ptr<Node> tmp = clientVector[i];
 
-		uint32_t nodeNum = tmp->GetId();
+			uint32_t nodeNum = tmp->GetId();
 
-		sprintf (buffer, "Adding client node: %d", nodeNum);
-		NS_LOG_INFO (buffer);
+			sprintf (buffer, "Adding client node: %d", nodeNum);
+			NS_LOG_INFO (buffer);
 
-		clientNodes.Add(tmp);
-		clientNodeIds.push_back(nodeNum);
-	}
+			clientNodes.Add(tmp);
+			clientNodeIds.push_back(nodeNum);
+		}
 
-	// Do the same for the server NodeContainer
-	for (uint32_t i = 0; i < servers; i++)
-	{
-		Ptr<Node> tmp = serverVector[i];
+		// Do the same for the server NodeContainer
+		for (uint32_t i = 0; i < servers; i++)
+		{
+			Ptr<Node> tmp = serverVector[i];
 
-		uint32_t nodeNum = tmp->GetId();
+			uint32_t nodeNum = tmp->GetId();
 
-		sprintf (buffer, "Adding server node: %d", nodeNum);
-		NS_LOG_INFO (buffer);
+			sprintf (buffer, "Adding server node: %d", nodeNum);
+			NS_LOG_INFO (buffer);
 
-		serverNodes.Add(tmp);
-		serverNodeIds.push_back(nodeNum);
-	}
+			serverNodes.Add(tmp);
+			serverNodeIds.push_back(nodeNum);
+		}
 
-
+	
 	/*// Create Traffic Flows
 	std::cout << "Creating TCP Traffic Flows:" << std::endl;
 	Config::SetDefault ("ns3::OnOffApplication::MaxBytes", UintegerValue (500000));
@@ -721,49 +722,74 @@ int main (int argc, char *argv[])
 	delete[] nodes_netLR;*/
 
 	// Calculate routing tables
-
-	//std::cout << "Populating Global Static Routing Tables..." << std::endl;
+	
+		//std::cout << "Populating Global Static Routing Tables..." << std::endl;
 	//Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	ndn::StackHelper ndnHelper;
 	//ndnHelper.SetDefaultRoutes (true);
 	// Install Content Store
-	ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","10000");
+	ndnHelper.SetContentStore("ns3::ndn::cs::Freshness::Lru","MaxSize","100");
 	ndnHelper.InstallAll ();
-
+	
 	ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
-	ndnGlobalRoutingHelper.InstallAll ();
-	ndnGlobalRoutingHelper.AddOrigins ("/Dinfo/tokyo/shinjuku/waseda-u/waseda", serverNodes);
-	ndn::GlobalRoutingHelper::CalculateRoutes ();
+		ndnGlobalRoutingHelper.InstallAll ();
+		ndnGlobalRoutingHelper.AddOrigins ("/Dinfo/tokyo/shinjuku/waseda-u/waseda", serverNodes);
+		ndn::GlobalRoutingHelper::CalculateRoutes ();
 
+        
 
-
-	// Consumer
+	// Consumermariah carey
 	ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerCbr");
 	// Consumer will request /prefix/0, /prefix/1, ...
 	consumerHelper.SetPrefix ("/Dinfo/tokyo/shinjuku/waseda-u/waseda");
-	consumerHelper.SetAttribute ("Frequency", StringValue ("100")); // 10 interests a second
+	consumerHelper.SetAttribute ("Randomize", StringValue ("exponential")); 
+        consumerHelper.SetAttribute ("Frequency", DoubleValue(1.0));
 	//consumerHelper.Install (nodes.Get (12)); // first node
 	//consumerHelper.Install (clientNodes);
-
+	
 	ApplicationContainer apps;
 
 	apps = consumerHelper.Install (clientNodes);
 	apps.Start (Seconds (0.1));
-	apps.Stop (Seconds (15.0)); 
+	apps.Stop (Seconds (30.0)); 
 
+        apps = consumerHelper.Install (clientNodes);
+        apps.Start (Seconds (40.1));
+	apps.Stop (Seconds (70.0)); 
+        
+        apps = consumerHelper.Install (clientNodes);
+        apps.Start (Seconds (80.1));
+	apps.Stop (Seconds (110.0)); 
 
 	// Producer
 	ndn::AppHelper producerHelper ("ns3::ndn::Producer");
 	// Producer will reply to all requests starting with /prefix
 	producerHelper.SetPrefix ("/Dinfo/tokyo/shinjuku/waseda-u/waseda");
 	producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
-
-	producerHelper.SetAttribute ("Freshness", TimeValue (Seconds(0)));
+        
+    //producerHelper.SetAttribute ("Freshness", TimeValue (Seconds(2.0)));
 	//producerHelper.Install (nodes.Get (2)); // last node
 	producerHelper.Install (serverNodes);
+        
+    
 
-
+                
 	// Obtain metrics
+/*
+        ndn::L3AggregateTracer::InstallAll("results/disaster-ccn-aggregate-trace.txt", Seconds (1.0));
+	ndn::L3RateTracer::InstallAll ("results/disaster-ccn-rate-trace.txt", Seconds (1.0));
+	ndn::AppDelayTracer::InstallAll ("results/disaster-ccn-app-delays-trace.txt");
+	L2RateTracer::InstallAll ("results/disaster-ccn-drop-trace.txt", Seconds (0.5));
+
+	p2p_1gb5ms.EnablePcap ("results/ccn_test0.pcap", serverNodes.Get(0)->GetId (), true,true);
+	//p2p_1gb5ms.EnablePcap ("results/tcp_test1.pcap", serverNodes.Get(1)->GetId (), true,true);
+	Simulator::Stop (Seconds (20.0));
+
+	Simulator::Run ();
+	Simulator::Destroy ();
+	return 0;
+*/
+// Obtain metrics
 	char filename[250];
 
 	// Print server nodes to file
@@ -803,7 +829,7 @@ int main (int argc, char *argv[])
 
 	p2p_1gb5ms.EnablePcap ("results/ccn_test0.pcap", serverNodes.Get(0)->GetId (), true,true);
 	//p2p_1gb5ms.EnablePcap ("results/tcp_test1.pcap", serverNodes.Get(1)->GetId (), true,true);
-	Simulator::Stop (Seconds (20.0));
+	Simulator::Stop (Seconds (120.0));
 
 	Simulator::Run ();
 	Simulator::Destroy ();
