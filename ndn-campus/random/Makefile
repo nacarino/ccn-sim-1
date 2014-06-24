@@ -2,13 +2,22 @@ CXX=g++
 RM=rm -f
 LDLIBS=-lboost_program_options
 
-SRCS=content-size-generator.cc
-OBJS=$(subst .cc,.o,$(SRCS))
+CSGSRCS=content-size-generator.cc
+CSGOBJS=$(subst .cc,.o,$(CSGSRCS))
 
-all: content-size-generator
+URLSRCS=url-generator.cc
+URLOBJS=$(subst .cc,.o,$(URLSRCS))
 
-content-size-generator: $(OBJS)
-	g++ -o content-size-generator $(OBJS) $(LDLIBS) 
+SRCS=$(CSGSRCS) $(URLSRCS)
+OBJS=$(CSGOBJS) $(URLOBJS)
+
+all: content-size-generator url-generator
+
+content-size-generator: $(CSGOBJS)
+	g++ -o content-size-generator $(CSGOBJS) $(LDLIBS) 
+
+url-generator: $(URLOBJS)
+	g++ -o url-generator $(URLOBJS) $(LDLIBS) 
 
 depend: .depend
 
@@ -19,6 +28,7 @@ depend: .depend
 clean:
 	$(RM) $(OBJS)
 	$(RM) content-size-generator
+	$(RM) url-generator
 
 dist-clean: clean
 	$(RM) *~ .dependtool
