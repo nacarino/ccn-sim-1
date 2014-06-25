@@ -1,0 +1,55 @@
+\documentclass[8pt,twocolumn]{article}
+\usepackage[english]{babel}
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{epsfig}
+\usepackage{listings, color}
+\usepackage{xcolor, colortbl}
+\usepackage{url}
+\usepackage{fullpage}
+
+\DeclareGraphicsExtensions{.png}
+
+\begin{document}
+\twocolumn[
+\centerline{\huge \bf NDN something something for people}
+\medskip
+\centerline{Jairo Eduardo L\'{o}pez$^{1}$, Takuro Sato$^{2*}$}
+\medskip
+\centerline{${}^{1,2}$ Graduate School of Information and Telecommunications
+Studies, Waseda University}
+\centerline{jairo at ruri dot waseda dot jp${}^{1}$, t-sato at waseda dot jp${}^{2}$, ${}^{*}$Fellow, IEEE}
+\bigskip
+]
+
+\section{Abstract}
+We use ndnSIM \cite{ndn367} a ns3 \cite{riley:ns3} \cite{ns3:2014:Online}
+module that implements Named Data Networking (NDN)
+ \cite{Jacobson:2009:NNC:1658939.1658941}. We follow the advice by Dr. John
+Day in checking out how NDN, and it's most famous implementation CCN, rack
+up to the proposed issues for next generation architectures 
+\cite{Day:2008:PNA:1349793}. We take a look at the routing aspect, particularly
+Routing on Flat Labels \cite{Caesar06rofl:routing} and notice how it doesn't
+add up and just implements a solution utilizing Moore's Law as a solution. We
+propose utilizing a DHT style location-aware naming, similar to Azure's
+Cubit \cite{WongSirer2008ApproximateMatching} utilizing nearest neighbor 
+searching using near optimal hashing \cite{Andoni06near-optimalhashing} to 
+improve routing capabilites without modifying the NDN architecture. Our results
+show that I really don't know what to do at this moment. 
+
+\section{NDN}
+\section{Implementation}
+\section{Future work}
+
+\section*{Acknowledgement}
+This research was supported by a grant-in-aid from the High-Tech Research
+Center Project of the Ministry of Education, Culture, Sports, Science and
+Technology (MEXT) \cite{mext:2014:Online}, Japan.
+
+\bibliographystyle{acm}
+\bibliography{myrefs}
+
+\end{document}
