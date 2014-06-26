@@ -15,7 +15,7 @@
 
 \begin{document}
 \twocolumn[
-\centerline{\huge \bf NDN something something for people}
+\centerline{\huge \bf On Network naming for mobility in ICN networks}
 \medskip
 \centerline{Jairo Eduardo L\'{o}pez$^{1}$, Takuro Sato$^{2*}$}
 \medskip
@@ -26,19 +26,55 @@ Studies, Waseda University}
 ]
 
 \section{Abstract}
-We use ndnSIM \cite{ndn367} a ns3 \cite{riley:ns3} \cite{ns3:2014:Online}
-module that implements Named Data Networking (NDN)
- \cite{Jacobson:2009:NNC:1658939.1658941}. We follow the advice by Dr. John
-Day in checking out how NDN, and it's most famous implementation CCN, rack
-up to the proposed issues for next generation architectures 
-\cite{Day:2008:PNA:1349793}. We take a look at the routing aspect, particularly
-Routing on Flat Labels \cite{Caesar06rofl:routing} and notice how it doesn't
-add up and just implements a solution utilizing Moore's Law as a solution. We
-propose utilizing a DHT style location-aware naming, similar to Azure's
-Cubit \cite{WongSirer2008ApproximateMatching} utilizing nearest neighbor 
-searching using near optimal hashing \cite{Andoni06near-optimalhashing} to 
-improve routing capabilites without modifying the NDN architecture. Our results
-show that I really don't know what to do at this moment. 
+It has been known for some time that our current Internet infrastructure
+requires an overhaul. Over the last 3 decades there have been attempts to solve
+the main issues plaguing our current network infrastructure. A lot of the 
+issues have been solved in ad-hoc ways, while others have been completely
+ignored. Mobility, for example, has required the implementation of complex
+architectures which have patched the problem, but not solved it due to the 
+flat naming of our current network infrastructure. 
+
+Among the new ideas for a clean-slate architecture, one of the most
+prominent has been Information Centric Networking (ICN), which attempts to put
+content as the primary source of network traffic. This architecture has been
+gaining momentum and shows a lot of promise, seamingly supporting mobility 
+out of the box, but we feel that it is failing to take into account one of the
+biggest source of issues in our current architecture; naming. In this paper we
+will talk about naming in networks and show via a simple simulation how most
+of the mobility issues in ICN could be solved via a 3 level naming/resolution
+system, leaving open the discussion of how best to implement these systems. 
+ 
+\section{Introduction}
+Information Centric Networking (ICN) is a clean-state network architecture
+initially proposed by Van Jacobson which attempts to make content and not
+hosts, the network's first class citizens
+ \cite{Jacobson:2009:NNC:1658939.1658941}. This particular shift to a
+content-oriented model is well founded in fact as most network analysis shows
+that for 2013 about 66\% of all IP traffic was caused by video transmission.
+Estimates put IP video tranmission at 79\% for 2018 \cite{cisco:2014:Online}.
+Another fact that makes this architecture compelling is that mobile IP traffic
+is currently at 3\% of the total IP traffic, but is estimated to increase 4
+fold in 5 years. While still a smaller chunk of total IP traffic, about 53\% of
+current mobile IP traffic is video and is also expected to increase in the 
+following years \cite{ciscomobile:2014:Online}. Taking these facts into
+account, it would seem beneficial for any future network architecture to
+take the high demand for content and mobility trend into account.
+
+The ICN architecture is still under heavy debate, meaning that there are a lot
+of competing proposals. The variations between some proposals can be really 
+subtle. The most important ICN proposals have been summarized in \cite{6563278}.
+
+\section{Current status of mobility in ICN Approaches}
+Due to the basic architecture of ICN, mobility, at least for the receiver, is
+assured. Since data can only be obtained after a device has sent an Interest
+Packet, mobility means that when a terminal changes network, the Interest 
+packets have to be retransmitted. For any other scenario, the ICN network
+architectuire attempts to be impartial to the stneger that of the leaser l 
+The main goal is to decouple the named
+content from it's actual location so that any node in the network can supply
+a request for that content.  
+
+For the publishing side, or for when you need to keeo a stared station beteec
 
 \section{NDN}
 \section{Implementation}
