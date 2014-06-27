@@ -86,6 +86,9 @@ typedef struct timeval TIMER_TYPE;
 
 NS_LOG_COMPONENT_DEFINE ("CampusNetworkModel");
 
+NodeContainer randomclient;//////test
+
+
 // Number generator
 br::mt19937_64 gen;
 
@@ -103,7 +106,8 @@ tuple<std::vector<Ptr<Node> >, std::vector<Ptr<Node> > > assignClientsandServers
 	char buffer[250];
 
 	// Obtain the global list of Nodes in the simulation
-	NodeContainer global = NodeContainer::GetGlobal ();
+	//NodeContainer global = NodeContainer::GetGlobal ();
+	NodeContainer global = randomclient;
 
 	// Get the number of nodes in the simulation
 	uint32_t size = global.GetN ();
@@ -231,15 +235,15 @@ int main (int argc, char *argv[])
 	std::cout << " ==== DARPA NMS CAMPUS NETWORK SIMULATION - TCP Bulk run====" << std::endl;
 	//LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
 
-	int nCN = 3, nLANClients = 42;
+	int nCN = 3, nLANClients = 100;
 	bool nix = true;
 	
 	// Char array for output strings
 	char buffer[250];
 
 	// These are our scenario arguments
-	uint32_t contentsize = 10485760; // Size in bytes of the content to transfer
-	uint32_t clients = 15; // Number of clients in the network
+	uint32_t contentsize = 1024000; // Size in bytes of the content to transfer
+	uint32_t clients = 20; // Number of clients in the network
 	uint32_t servers = 1; // Number of servers in the network
 	uint32_t networks = 1; // Number of additional nodes in the network
 	char results[250] = "results";
@@ -398,6 +402,7 @@ int main (int argc, char *argv[])
 				nodes_net2LAN[z][i][j].Add (nodes_net2[z][i+7].Get (0));
 				ndc2LAN[i][j] = p2p_100mb1ms.Install (nodes_net2LAN[z][i][j]);
 				ifs2LAN[z][i][j] = address.Assign (ndc2LAN[i][j]);
+				randomclient.Add (nodes_net2LAN[z][i][j].Get(0));
 			}
 		}
 		// Create Net3
@@ -435,6 +440,7 @@ int main (int argc, char *argv[])
 				nodes_net3LAN[z][i][j].Add (nodes_net3[z][i+4].Get (0));
 				ndc3LAN[i][j] = p2p_100mb1ms.Install (nodes_net3LAN[z][i][j]);
 				ifs3LAN[z][i][j] = address.Assign (ndc3LAN[i][j]);
+				randomclient.Add (nodes_net3LAN[z][i][j].Get(0));
 			}
 		}
 		std::cout << "  Connecting Subnets..." << std::endl;
@@ -551,6 +557,9 @@ int main (int argc, char *argv[])
 		delete[] ndc_ring;
 		delete[] nodes_ring;
 	}
+	
+	  Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (250));
+	  Config::SetDefault ("ns3::OnOffApplication::DataRate", StringValue ("1000kb/s"));
 
 	// Make sure to seed our random
 	gen.seed(std::time(0));
@@ -655,6 +664,20 @@ int main (int argc, char *argv[])
 					InetSocketAddress (tmp, port)));
 
 			sources[sources.size()-1].SetAttribute ("MaxBytes", UintegerValue (contentsize));
+            
+            // Exponential probability = ae^(-ax), a=1/mean
+            // For ccn the mean equals to 1/frequency(say 100)
+            // So offtime(mean) will be offtime(0.01)  
+            
+            /*
+            ExponentialVariable ontime(0.99); 
+            ExponentialVariable offtime(0.01); 
+            RandomVariableValue onontime = RandomVariableValue (ontime); 
+            RandomVariableValue offofftime = RandomVariableValue (offtime); 
+            sources[sources.size()-1].SetAttribute ("OnTime",  onontime); 
+            sources[sources.size()-1].SetAttribute ("OffTime", offofftime);
+            */
+  
             sources[sources.size()-1].SetAttribute ("OnTime",  StringValue ("ns3::ExponentialRandomVariable[Mean=0.99]"));
             sources[sources.size()-1].SetAttribute ("OffTime", StringValue ("ns3::ExponentialRandomVariable[Mean=0.01]"));
 		}
@@ -673,12 +696,12 @@ int main (int argc, char *argv[])
 	ApplicationContainer sourceApps = ApplicationContainer ();
 
 	for (int i = 0; i < sources.size(); i++) {
-		sourceApps.Add(sources[i].Install (serverNodes));
+		sourceApps.Add(sources[i].Install (nodes_net1[0][5].Get (0)));
 	}
 
 	// Begin and stop the bulk sender at the following times
-	sourceApps.Start (Seconds (1.0));
-	sourceApps.Stop (Seconds (200.0));
+	//sourceApps.Start (Seconds (1.0));
+	//sourceApps.Stop (Seconds (200.0));
 
 	NS_LOG_INFO ("Create bulk clients");
 
@@ -688,8 +711,8 @@ int main (int argc, char *argv[])
 
 	// Install the sink application on all clients
 	ApplicationContainer sinkApps = sink.Install (clientNodes);
-	sinkApps.Start (Seconds (1.0));
-	sinkApps.Stop (Seconds (200.0));
+	//sinkApps.Start (Seconds (1.0));
+	//sinkApps.Stop (Seconds (200.0));
 
 
 	/*
@@ -717,48 +740,19 @@ int main (int argc, char *argv[])
 
 	//////////////////////////////////////////
 */
-
+	
+	
+	
 	char filename[250];
+	
+	//Ipv4RateL3Tracer::Install(clientNodes,"l3clients.txt", Seconds (1.0));
+	sprintf (filename, "results/disaster-TCP-Client-trace-%02d-%03d-%03d.txt", networks, servers, clients);
+	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4RateL3Tracer> > > clientTracer = Ipv4RateL3Tracer::Install (clientNodes,filename, Seconds (1.0));
+	//Ipv4RateL3Tracer::Install(nodes_net1[0][5].Get (0),"l3server.txt", Seconds (1.0));
+	sprintf (filename, "results/disaster-TCP-Server-trace-%02d-%03d-%03d.txt", networks, servers, clients);
+	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4RateL3Tracer> > > serverTracer = Ipv4RateL3Tracer::Install(nodes_net1[0][5].Get (0),filename, Seconds (1.0));
 
-	// Print server nodes to file
-	sprintf(filename, "%s/disaster-tcp-servers-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
-
-	NS_LOG_INFO ("Printing node files");
-	std::ofstream serverFile;
-	serverFile.open (filename);
-	for (int i = 0; i < serverNodeIds.size(); i++) {
-		serverFile << serverNodeIds[i] << std::endl;
-	}
-	serverFile.close();
-
-	sprintf(filename, "%s/disaster-tcp-clients-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
-
-	std::ofstream clientFile;
-	clientFile.open (filename);
-	for (int i = 0; i < clientNodeIds.size(); i++) {
-		clientFile << clientNodeIds[i] << std::endl;
-	}
-	clientFile.close();
-
-	sprintf (filename, "%s/disaster-tcp-rate-trace-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
-
-	NS_LOG_INFO ("Printing IPv4 L3 Tracer");
-	// Install the ndnSIM tracers for IPv4
-	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4RateL3Tracer> > > rateTracers = Ipv4RateL3Tracer::InstallAll (filename, Seconds (1.0));
-
-	sprintf (filename, "%s/disaster-tcp-app-delays-trace-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
-
-	NS_LOG_INFO ("Printing IPv4 Seq Apps Tracer");
-	tuple< boost::shared_ptr<std::ostream>, std::list<Ptr<Ipv4SeqsAppTracer> > > seqApps = Ipv4SeqsAppTracer::InstallAll(filename);
-
-	sprintf (filename, "%s/disaster-tcp-drop-trace-%02d-%03d-%03d-%0*d.txt", results, networks, servers, clients, 12, contentsize);
-	NS_LOG_INFO ("Printing L2 Drop Tracer");
-	L2RateTracer::InstallAll (filename, Seconds (0.5));
-
-    sprintf (filename, "%s/tcp_server-%02d-%03d-%03d-%0*d.pcap", results, networks, servers, clients, 12, contentsize);
-    p2p_1gb5ms.EnablePcap (filename, 8, true,true);
-    //p2p_1gb5ms.EnablePcap ("results/tcp_server.pcap", 8, true,true);
-
+	
 	Simulator::Stop (Seconds (100.0));
 	Simulator::Run ();
 	Simulator::Destroy ();

@@ -729,6 +729,7 @@ int main (int argc, char *argv[])
 	//ndnHelper.SetDefaultRoutes (true);
 	// Install Content Store
 	ndnHelper.SetContentStore("ns3::ndn::cs::Freshness::Lru","MaxSize","100");
+	ndnHelper.SetContentStore("ns3::ndn::cs::Lru","MaxSize","10000");
 	ndnHelper.InstallAll ();
 	
 	ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
@@ -736,9 +737,7 @@ int main (int argc, char *argv[])
 		ndnGlobalRoutingHelper.AddOrigins ("/Dinfo/tokyo/shinjuku/waseda-u/waseda", serverNodes);
 		ndn::GlobalRoutingHelper::CalculateRoutes ();
 
-        
-
-	// Consumermariah carey
+	// Consumer
 	ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerCbr");
 	// Consumer will request /prefix/0, /prefix/1, ...
 	consumerHelper.SetPrefix ("/Dinfo/tokyo/shinjuku/waseda-u/waseda");
@@ -768,6 +767,7 @@ int main (int argc, char *argv[])
 	producerHelper.SetAttribute ("PayloadSize", StringValue("1024"));
         
     //producerHelper.SetAttribute ("Freshness", TimeValue (Seconds(2.0)));
+    producerHelper.SetAttribute ("Freshness", TimeValue (Seconds(0)));
 	//producerHelper.Install (nodes.Get (2)); // last node
 	producerHelper.Install (serverNodes);
         
