@@ -42,6 +42,7 @@
 #include <ns3-dev/ns3/core-module.h>
 #include <ns3-dev/ns3/mobility-module.h>
 #include <ns3-dev/ns3/network-module.h>
+#include <ns3-dev/ns3/point-to-point-module.h>
 #include <ns3-dev/ns3/wifi-module.h>
 
 // ndnSIM modules
@@ -180,10 +181,10 @@ int main (int argc, char *argv[])
 {
 	// These are our scenario arguments
 	uint32_t contentsize = 10485760;	// Size in bytes of the content to transfer
-	uint32_t aps = 5;					// Number of clients in the network
+	uint32_t aps = 6;					// Number of clients in the network
 	uint32_t mobile = 1;				// Number of mobile terminals
 	uint32_t clients = 1;				// Number of clients in the network
-	uint32_t nodes = 10;				// Number of nodes in the network
+	uint32_t nodes = 12;				// Number of nodes in the network
 	double sec = 0.0;					// Movement start
 	double waitint = 0.6;				// Wait at AP
 	double travelTime = 3.0;			// Travel time within APs
@@ -205,15 +206,41 @@ int main (int argc, char *argv[])
 	cmd.AddValue ("travel", "Travel time between APs", travelTime);
 	cmd.Parse (argc,argv);
 
-	// Node definitions for mobile terminals and AP containers
+	// Node definitions for mobile terminals
 	NodeContainer mobileTerminalContainer;
 	mobileTerminalContainer.Create(mobile);
 
+	// Nodes for APs
 	NodeContainer apsContainer;
 	apsContainer.Create (aps);
 
+	// LAN nodes
 	NodeContainer networkNodes;
 	networkNodes.Create (nodes);
+
+	// First level nodes (after APs)
+	NodeContainer middleNodes;
+	middleNodes.Create (aps);
+
+	int desiredConnections = 2;
+	int lvl3nodes = aps / desiredConnections;
+
+	int lansize = nodes / lvl3nodes;
+
+	// Second level nodes, after first level
+	NodeContainer lanrouterNodes;
+	lanrouterNodes.Create (lvl3nodes);
+
+	// Container for all routers
+	NodeContainer allRouters;
+	allRouters.Add (apsContainer);
+	allRouters.Add (middleNodes);
+	allRouters.Add (lanrouterNodes);
+
+	// Container for all user nodes
+	NodeContainer allUserNodes;
+	allUserNodes.Add (mobileTerminalContainer);
+	allUserNodes.Add (networkNodes);
 
 	// Make sure to seed our random
 	gen.seed(std::time(0));
@@ -258,11 +285,39 @@ int main (int argc, char *argv[])
 
 	mobilityStations.Install (apsContainer);
 
+	// Mobility definition for Level 1
+	MobilityHelper mobilitylvl1;
+
+	mobilitylvl1.SetPositionAllocator ("ns3::GridPositionAllocator",
+			"MinX", DoubleValue (0.0),
+			"MinY", DoubleValue (20.0),
+			"DeltaX", DoubleValue (30.0),
+			"DeltaY", DoubleValue (0.0),
+			"GridWidth", UintegerValue (middleNodes.GetN ()),
+			"LayoutType", StringValue ("RowFirst"));
+	mobilitylvl1.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+
+	mobilitylvl1.Install (middleNodes);
+
+	// Mobility definition for Level 2
+	MobilityHelper mobilitylvl2;
+
+	mobilitylvl2.SetPositionAllocator ("ns3::GridPositionAllocator",
+			"MinX", DoubleValue (15.0),
+			"MinY", DoubleValue (40.0),
+			"DeltaX", DoubleValue (60.0),
+			"DeltaY", DoubleValue (0.0),
+			"GridWidth", UintegerValue (lanrouterNodes.GetN ()),
+			"LayoutType", StringValue ("RowFirst"));
+	mobilitylvl2.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+
+	mobilitylvl2.Install (lanrouterNodes);
+
 	NS_LOG_INFO ("Placing mobile terminals");
 
 	MobilityHelper mobilityTerminals;
 
-	Vector diff = Vector(0.0, 8.0, 0.0);
+	Vector diff = Vector(0.0, -8.0, 0.0);
 
 	Vector pos;
 
@@ -285,7 +340,7 @@ int main (int argc, char *argv[])
 
 	NS_LOG_INFO (buffer);
 
-	for (int j = 0; j < apsContainer.GetN (); j++)
+	for (int j = 0; j < aps; j++)
 	{
 		mob = apsContainer.Get (j)->GetObject<MobilityModel>();
 
@@ -297,7 +352,126 @@ int main (int argc, char *argv[])
 		sec += waitint + travelTime;
 	}
 
-	// Obtain metrics
+	WifiHelper wifi = WifiHelper::Default ();
+	wifi.SetStandard (WIFI_PHY_STANDARD_80211n_2_4GHZ);
+	wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+			"DataMode", StringValue ("OfdmRate24Mbps"));
+
+	YansWifiChannelHelper wifiChannel;
+	wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
+	wifiChannel.AddPropagationLoss ("ns3::ThreeLogDistancePropagationLossModel");
+	wifiChannel.AddPropagationLoss ("ns3::NakagamiPropagationLossModel");
+
+	//YansWifiPhy wifiPhy = YansWifiPhy::Default();
+	YansWifiPhyHelper wifiPhyHelper = YansWifiPhyHelper::Default ();
+	wifiPhyHelper.SetChannel (wifiChannel.Create ());
+	wifiPhyHelper.Set("TxPowerStart", DoubleValue(5));
+	wifiPhyHelper.Set("TxPowerEnd", DoubleValue(5));
+
+	NqosWifiMacHelper wifiMacHelper = NqosWifiMacHelper::Default ();
+	wifiMacHelper.SetType("ns3::AdhocWifiMac");
+
+	NetDeviceContainer wifiAPNetDevices = wifi.Install (wifiPhyHelper, wifiMacHelper, apsContainer);
+
+	NetDeviceContainer wifiMTNetDevices = wifi.Install (wifiPhyHelper, wifiMacHelper, mobileTerminalContainer);
+
+	NetDeviceContainer p2pAPMiddleDevices;
+
+	// Connect APs to first level cache with p2p
+	PointToPointHelper p2p_1gb5ms;
+	p2p_1gb5ms.SetDeviceAttribute ("DataRate", StringValue ("1Gbps"));
+	p2p_1gb5ms.SetChannelAttribute ("Delay", StringValue ("5ms"));
+
+	for (int j = 0; j < aps; j++)
+	{
+		p2pAPMiddleDevices.Add (
+				p2p_1gb5ms.Install (apsContainer.Get (j),
+						middleNodes.Get (j)));
+	}
+
+	// Connect first level nodes with second level nodes with p2p
+	NetDeviceContainer p2pMiddleLanRouterDevices;
+
+	int step = 0;
+
+	for (int j = 0; j < lvl3nodes; j++)
+	{
+		for (int k = 0; k < desiredConnections; k++)
+		{
+			p2pMiddleLanRouterDevices.Add (
+					p2p_1gb5ms.Install(middleNodes.Get (k + step),
+							lanrouterNodes.Get (j)));
+		}
+
+		step += desiredConnections;
+	}
+
+	std::vector<NodeContainer> lans;
+
+	step = 0;
+
+	for (int i = 0; i < lvl3nodes; i++)
+	{
+		NodeContainer tmp;
+		tmp.Add (lanrouterNodes.Get (i));
+
+		for (int k = 0; k < lansize; k++)
+		{
+			tmp.Add (networkNodes.Get (k + step));
+		}
+
+		step += lansize;
+		lans.push_back (tmp);
+	}
+
+	std::vector<CsmaHelper> csmaV;
+
+	for (int j = 0; j < lvl3nodes; j++)
+	{
+		CsmaHelper csma;
+		csma.SetChannelAttribute("Delay", StringValue("2ms"));
+		csma.SetChannelAttribute("DataRate", StringValue("100Mbps"));
+
+		csmaV.push_back (csma);
+	}
+	CsmaHelper csma;
+
+	std::vector<NetDeviceContainer> lanDevices;
+
+	for (int j = 0; j < lvl3nodes; j++)
+	{
+		lanDevices.push_back (csmaV[j].Install (lans[j]));
+	}
+
+	// Now install content stores and the rest on the middle node. Leave
+	// out clients and the mobile node
+	NS_LOG_INFO ("Installing NDN stack on routers");
+	ndn::StackHelper ndnHelperRouters;
+	ndnHelperRouters.SetForwardingStrategy ("ns3::ndn::fw::BestRoute");
+	ndnHelperRouters.SetContentStore ("ns3::ndn::cs::Freshness::Lru", "MaxSize", "1000");
+	ndnHelperRouters.SetDefaultRoutes (true);
+	ndnHelperRouters.Install (allRouters);
+
+	ndn::StackHelper ndnHelperUsers;
+	ndnHelperUsers.SetForwardingStrategy ("ns3::ndn::fw::BestRoute");
+	ndnHelperUsers.SetContentStore ("ns3::ndn::cs::Nocache");
+	ndnHelperUsers.SetDefaultRoutes (true);
+	ndnHelperUsers.Install (allUserNodes);
+
+	NS_LOG_INFO ("Installing Producer Application");
+	// Create the producer on the mobile node
+	ndn::AppHelper producerHelper ("ns3::ndn::Producer");
+	producerHelper.SetPrefix ("/waseda/sato");
+	producerHelper.SetAttribute ("PayloadSize", UintegerValue (contentsize));
+	producerHelper.Install (mobileTerminalContainer);
+
+	NS_LOG_INFO ("Installing Consumer Application");
+	// Create the consumer on the randomly selected node
+	ndn::AppHelper consumerHelper ("ns3::ndn::ConsumerCbr");
+	consumerHelper.SetPrefix ("/waseda/sato");
+	consumerHelper.SetAttribute ("Frequency", DoubleValue (10.0));
+	consumerHelper.SetAttribute ("MaxSeq", IntegerValue  (100));
+	consumerHelper.Install (clientNodes);
 
 	// Filename
 	char filename[250];
