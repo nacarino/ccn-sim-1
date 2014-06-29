@@ -185,10 +185,13 @@ int main (int argc, char *argv[])
 	uint32_t mobile = 1;				// Number of mobile terminals
 	uint32_t clients = 1;				// Number of clients in the network
 	uint32_t nodes = 12;				// Number of nodes in the network
+	int posCC = -1;					// Establish which node will be client
 	double sec = 0.0;					// Movement start
 	double waitint = 1.0;				// Wait at AP
 	double travelTime = 3.0;			// Travel time within APs
-	bool traceFiles = false;
+	bool traceFiles = false;			// Tells to run the simulation with traceFiles
+	bool smart = false;					// Tells to run the simulation with SmartFlooding
+	bool bestr = false;					// Tells to run the simulation with BestRoute
 
 	char results[250] = "results";
 	char buffer[250];
@@ -205,7 +208,10 @@ int main (int argc, char *argv[])
 	cmd.AddValue ("start", "Starting second", sec);
 	cmd.AddValue ("waitint", "Wait interval between APs", waitint);
 	cmd.AddValue ("travel", "Travel time between APs", travelTime);
+	cmd.AddValue ("pos", "Position ", posCC);
 	cmd.AddValue ("trace", "Enable trace files", traceFiles);
+	cmd.AddValue ("smart", "Enable SmartFlooding forwarding", smart);
+	cmd.AddValue ("bestr", "Enable BestRoute forwarding", bestr);
 	cmd.Parse (argc,argv);
 
 	// Node definitions for mobile terminals
@@ -247,25 +253,33 @@ int main (int argc, char *argv[])
 	// With the network assigned, time to randomly obtain clients and servers
 	NS_LOG_INFO ("Obtaining the clients and servers");
 
-	// Obtain the random lists of server and clients
-	std::vector<Ptr<Node> > clientVector = assignWithinContainer(networkNodes, clients);
-
 	NodeContainer clientNodes;
 	std::vector<uint32_t> clientNodeIds;
 
-	// We have to manually introduce the Ptr<Node> to the NodeContainers
-	// We do this to make them easier to control later
-	for (uint32_t i = 0; i < clients ; i++)
+	if (posCC > -1 && posCC < networkNodes.GetN())
 	{
-		Ptr<Node> tmp = clientVector[i];
+		Ptr<Node> tmp = networkNodes.Get (posCC);
+		clientNodes.Add (tmp);
+		clientNodeIds.push_back(tmp->GetId());
 
-		uint32_t nodeNum = tmp->GetId();
+	} else 	{
+		// Obtain the random lists of server and clients
+		std::vector<Ptr<Node> > clientVector = assignWithinContainer(networkNodes, clients);
 
-		sprintf (buffer, "Adding client node: %d", nodeNum);
-		NS_LOG_INFO (buffer);
+		// We have to manually introduce the Ptr<Node> to the NodeContainers
+		// We do this to make them easier to control later
+		for (uint32_t i = 0; i < clients ; i++)
+		{
+			Ptr<Node> tmp = clientVector[i];
 
-		clientNodes.Add(tmp);
-		clientNodeIds.push_back(nodeNum);
+			uint32_t nodeNum = tmp->GetId();
+
+			sprintf (buffer, "Adding client node: %d", nodeNum);
+			NS_LOG_INFO (buffer);
+
+			clientNodes.Add(tmp);
+			clientNodeIds.push_back(nodeNum);
+		}
 	}
 
 	NS_LOG_INFO ("Placing APs");
@@ -459,11 +473,27 @@ int main (int argc, char *argv[])
 		lanDevices.push_back (csmaV[j].Install (lans[j]));
 	}
 
+	char routeType[250];
+
 	// Now install content stores and the rest on the middle node. Leave
 	// out clients and the mobile node
 	NS_LOG_INFO ("Installing NDN stack on routers");
 	ndn::StackHelper ndnHelperRouters;
-	ndnHelperRouters.SetForwardingStrategy ("ns3::ndn::fw::SmartFlooding::PerOutFaceLimits", "Limit", "ns3::ndn::Limits::Window");
+
+	if (smart) {
+		sprintf(routeType, "%s", "smart");
+		NS_LOG_INFO ("NDN Utilizing SmartFlooding");
+		ndnHelperRouters.SetForwardingStrategy ("ns3::ndn::fw::SmartFlooding::PerOutFaceLimits", "Limit", "ns3::ndn::Limits::Window");
+	} else if (bestr) {
+		sprintf(routeType, "%s", "bestr");
+		NS_LOG_INFO ("NDN Utilizing BestRoute");
+		ndnHelperRouters.SetForwardingStrategy ("ns3::ndn::fw::BestRoute::PerOutFaceLimits", "Limit", "ns3::ndn::Limits::Window");
+	} else {
+		sprintf(routeType, "%s", "flood");
+		NS_LOG_INFO ("NDN Utilizing Flooding");
+		ndnHelperRouters.SetForwardingStrategy ("ns3::ndn::fw::Flooding::PerOutFaceLimits", "Limit", "ns3::ndn::Limits::Window");
+	}
+
 	ndnHelperRouters.SetContentStore ("ns3::ndn::cs::Freshness::Lru", "MaxSize", "1000");
 	ndnHelperRouters.SetDefaultRoutes (true);
 	ndnHelperRouters.Install (allRouters);
@@ -498,7 +528,7 @@ int main (int argc, char *argv[])
 		char fileId[250];
 
 		// Create the file identifier
-		sprintf(fileId, "%02d-%03d-%03d.txt", mobile, clients, nodes);
+		sprintf(fileId, "%s-%02d-%03d-%03d.txt", routeType, mobile, clients, nodes);
 
 		// Print server nodes to file
 		sprintf(filename, "%s/%s-servers-%d", results, scenario, fileId);
@@ -559,7 +589,7 @@ int main (int argc, char *argv[])
 
 	NS_LOG_INFO ("Ready for execution!");
 
-	Simulator::Stop (Seconds (40.0));
+	Simulator::Stop (Seconds (28.0));
 	Simulator::Run ();
 	Simulator::Destroy ();
 }

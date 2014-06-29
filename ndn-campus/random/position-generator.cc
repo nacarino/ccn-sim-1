@@ -1,18 +1,18 @@
 /*
  *
- * content-size-generator.cc
+ * position-generator.cc
  *
  *  Simple command line program to generate a random number using a geometric
  *  distribution. Accepts a size in MB and returns a size in bytes.
  *
- *  Created on: May 9, 2014
+ *  Created on: June 29, 2014
  *      Author: Jairo Eduardo Lopez
  */
 #include <ctime>
 #include <iostream>
 #include <iterator>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/random/geometric_distribution.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/program_options.hpp>
 
@@ -32,7 +32,8 @@ int main(int ac, char* av[])
 		po::options_description desc("Allowed options");
 		desc.add_options()
 	            		("help", "Produce this help message")
-	            		("avg", po::value<double>(), "Set average size (MB) for the geometric distribution")
+	            		("min", po::value<double>(), "Min value for uniform distribution")
+	            		("max", po::value<double>(), "Max value for uniform distribution")
 	            		;
 
 		po::store(po::parse_command_line(ac, av, desc), vm);
@@ -43,8 +44,13 @@ int main(int ac, char* av[])
 			return 0;
 		}
 
-		if (! vm.count("avg")) {
-			cout << "Size (MB) was not set!.\n";
+		if (! vm.count("min")) {
+			cout << "Minimum was not set!.\n";
+			return 1;
+		}
+		
+		if (! vm.count("max")) {
+			cout << "Maximum was not set!.\n";
 			return 1;
 		}
 	}
@@ -55,14 +61,15 @@ int main(int ac, char* av[])
 	catch(...) {
 		cerr << "Exception of unknown type!\n";
 	}
+	
+	double minP = vm["min"].as<double>();
+	double maxP = vm["max"].as<double>();
+	
+	uniform_int_distribution<> pos(minP, maxP);
 
-	double average = 1.0/ (vm["avg"].as<double>() * 1048576);
-	geometric_distribution<> size_dist(average);
+	variate_generator<mt19937_64&, uniform_int_distribution<> > pos_gen(gen, pos);
 
-	variate_generator<mt19937_64&, geometric_distribution<> > content_size(gen, size_dist);
-
-	cout << content_size() << endl;
+	cout << pos_gen() << endl;
 
 	return 0;
 }
-

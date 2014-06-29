@@ -38,7 +38,7 @@ struct length {
 
 int main(int ac, char* av[])
 {
-	gen.seed(std::time(0));
+	gen.seed(std::time(0) + (long long)getpid() << 32);
 	po::variables_map vm;
 
 	try {
