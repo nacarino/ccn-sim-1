@@ -1,4 +1,4 @@
-\documentclass[8pt,twocolumn]{article}
+\documentclass[twocolumn, a4paper]{ieicejsp}
 \usepackage[english]{babel}
 
 \usepackage{graphicx}
@@ -7,23 +7,27 @@
 \usepackage{amsthm}
 \usepackage{epsfig}
 \usepackage{listings, color}
-\usepackage{xcolor, colortbl}
 \usepackage{url}
-\usepackage{fullpage}
 
-\DeclareGraphicsExtensions{.png}
+\title{{\bf On Provider mobility in ICN networks}}
+\author{
+    Jairo Eduardo L\'{o}pez$^1$ \\ \and
+    Takuro Sato$^1$ 
+}
+\affliate{Graduate School of Information and Telecommunications Studies, Waseda University$^1$}
 
 \begin{document}
-\twocolumn[
-\centerline{\huge \bf On Provider mobility in ICN networks}
-\medskip
-\centerline{Jairo Eduardo L\'{o}pez$^{1}$, Takuro Sato$^{2*}$}
-\medskip
-\centerline{${}^{1,2}$ Graduate School of Information and Telecommunications
-Studies, Waseda University}
-\centerline{jairo at ruri dot waseda dot jp${}^{1}$, t-sato at waseda dot jp${}^{2}$, ${}^{*}$Fellow, IEEE}
-\bigskip
-]
+\maketitle
+%\twocolumn[
+%\centerline{\huge \bf On Provider mobility in ICN networks}
+%\medskip
+%\centerline{Jairo Eduardo L\'{o}pez$^{1}$, Takuro Sato$^{2*}$}
+%\medskip
+%\centerline{${}^{1,2}$ Graduate School of Information and Telecommunications
+%Studies, Waseda University}
+%\centerline{jairo at ruri dot waseda dot jp${}^{1}$, t-sato at waseda dot jp${}^{2}$, ${}^{*}$Fellow, IEEE}
+%\bigskip
+%]
 
 \section{Abstract}
 %It has been known for some time that our current Internet infrastructure
@@ -114,8 +118,9 @@ node, with Content Stores using the same policies, that connects to a LAN. The
 client nodes are divided into 3 LANs with 4 nodes connected via CSMA/CD connections. 
 
 \begin{figure}[h]
-\centering
-\resizebox{\columnwidth}{!}{\includegraphics[scale=0.6]{topology.png}}
+%\centering
+%\resizebox{\columnwidth}{!}{\includegraphics[scale=0.4]{topology.png}}
+\epsfig{file=topology.eps}
 \caption{Topology for experiments}
 \label{fig:exptop}
 \end{figure}
@@ -132,8 +137,9 @@ The client node that is picked to create Interests is chosen randomly in every
 \section{Results}
 
 \begin{figure}[h]
-\centering
-\resizebox{\columnwidth}{!}{\includegraphics{satisfied-timeout.png}}
+%\centering
+%\resizebox{\columnwidth}{!}{\includegraphics{satisfied-timeout.png}}
+\epsfig{file=satisfied-timeout.eps}
 \caption{Satisfied and Timed Out Interest Packet}
 \label{fig:sattimeint}
 \end{figure}
