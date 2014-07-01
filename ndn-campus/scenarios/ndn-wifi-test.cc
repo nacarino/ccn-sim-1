@@ -74,14 +74,25 @@ int main (int argc, char *argv[])
 	mobileTerminalContainer.Create(1);
 
 	NodeContainer clientNodes;
-	clientNodes.Create (1);
+	clientNodes.Create (4);
 
 	NodeContainer routerNode;
 	routerNode.Create (2);
 
+	NodeContainer lanNode;
+	lanNode.Create (1);
+
 	NodeContainer allUserNodes;
 	allUserNodes.Add (mobileTerminalContainer);
 	allUserNodes.Add (clientNodes);
+
+	NodeContainer allRouterNodes;
+	allRouterNodes.Add (routerNode);
+	allRouterNodes.Add (lanNode);
+
+	NodeContainer csmaNodes;
+	csmaNodes.Add (lanNode);
+	csmaNodes.Add (clientNodes);
 
 	// Mobility definition for APs
 	MobilityHelper mobilityStations;
@@ -89,10 +100,10 @@ int main (int argc, char *argv[])
 	mobilityStations.SetPositionAllocator ("ns3::GridPositionAllocator",
 			"MinX", DoubleValue (0.0),
 			"MinY", DoubleValue (30.0),
-			"DeltaX", DoubleValue (0.0),
-			"DeltaY", DoubleValue (30.0),
-			"GridWidth", UintegerValue (routerNode.GetN ()),
-			"LayoutType", StringValue ("ColumnFirst"));
+			"DeltaX", DoubleValue (30.0),
+			"DeltaY", DoubleValue (0.0),
+			"GridWidth", UintegerValue (2),
+			"LayoutType", StringValue ("RowFirst"));
 	mobilityStations.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
 	mobilityStations.Install (routerNode);
@@ -109,6 +120,19 @@ int main (int argc, char *argv[])
 	mobilityTerminal.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
 	mobilityTerminal.Install (mobileTerminalContainer);
+
+	MobilityHelper OtherNode;
+
+	OtherNode.SetPositionAllocator("ns3::GridPositionAllocator",
+			"MinX", DoubleValue (15.0),
+			"MinY", DoubleValue (60.0),
+			"DeltaX", DoubleValue (0.0),
+			"DeltaY", DoubleValue (0.0),
+			"GridWidth", UintegerValue (1),
+			"LayoutType", StringValue ("RowFirst"));
+	OtherNode.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+
+	OtherNode.Install (lanNode);
 
 	WifiHelper wifi = WifiHelper::Default ();
 	wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager");
@@ -144,14 +168,21 @@ int main (int argc, char *argv[])
 	p2p_1gb5ms.SetDeviceAttribute ("DataRate", StringValue ("1Gbps"));
 	p2p_1gb5ms.SetChannelAttribute ("Delay", StringValue ("5ms"));
 
+	CsmaHelper csma;
+	csma.SetChannelAttribute("Delay", StringValue("2ms"));
+	csma.SetChannelAttribute("DataRate", StringValue("100Mbps"));
+
 	NetDeviceContainer p2pAPClientDevices = p2p_1gb5ms.Install (routerNode.Get (0), routerNode.Get (1));
-	NetDeviceContainer p2pAPClient2Devices = p2p_1gb5ms.Install (routerNode.Get (1), clientNodes.Get (0));
+	NetDeviceContainer p2pAPLANDevice01 = p2p_1gb5ms.Install (routerNode.Get (0), lanNode.Get (0));
+	NetDeviceContainer p2pAPLANDevice02 = p2p_1gb5ms.Install (routerNode.Get (1), lanNode.Get (0));
+
+	csma.Install (csmaNodes);
 
 	ndn::StackHelper ndnHelperRouters;
 	ndnHelperRouters.SetForwardingStrategy ("ns3::ndn::fw::Flooding");
 	ndnHelperRouters.SetContentStore ("ns3::ndn::cs::Freshness::Lru", "MaxSize", "1000");
 	ndnHelperRouters.SetDefaultRoutes (true);
-	ndnHelperRouters.Install (routerNode);
+	ndnHelperRouters.Install (allRouterNodes);
 
 	ndn::StackHelper ndnHelperUsers;
 	ndnHelperUsers.SetForwardingStrategy ("ns3::ndn::fw::BestRoute");
@@ -167,7 +198,7 @@ int main (int argc, char *argv[])
 	// Create the producer on the mobile node
 	ndn::AppHelper producerHelper ("ns3::ndn::Producer");
 	producerHelper.SetPrefix ("/waseda/sato");
-	producerHelper.SetAttribute("StopTime", TimeValue (Seconds(20.0)));
+	producerHelper.SetAttribute("StopTime", TimeValue (Seconds(24.0)));
 	producerHelper.Install (mobileTerminalContainer);
 
 	NS_LOG_INFO ("Installing Consumer Application");
@@ -176,7 +207,7 @@ int main (int argc, char *argv[])
 	consumerHelper.SetPrefix ("/waseda/sato");
 	consumerHelper.SetAttribute ("Frequency", DoubleValue (10.0));
 	consumerHelper.SetAttribute("StartTime", TimeValue (Seconds(1.5)));
-	consumerHelper.SetAttribute("StopTime", TimeValue (Seconds(19)));
+	consumerHelper.SetAttribute("StopTime", TimeValue (Seconds(23)));
 	consumerHelper.Install (clientNodes.Get (0));
 
 	/*ndn::AppHelper consumer2Helper ("ns3::ndn::ConsumerCbr");

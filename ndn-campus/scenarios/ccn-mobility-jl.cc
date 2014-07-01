@@ -520,6 +520,9 @@ int main (int argc, char *argv[])
 	consumerHelper.SetAttribute("StopTime", TimeValue (Seconds(sec-1)));
 	consumerHelper.Install (clientNodes);
 
+	sprintf(buffer, "Ending time! %f", sec-1);
+	NS_LOG_INFO(buffer);
+
 	if (traceFiles) {
 		// Filename
 		char filename[250];
