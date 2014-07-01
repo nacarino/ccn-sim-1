@@ -1,0 +1,8 @@
+InfoKey: Title
+InfoValue: On assessing Provider mobility in ICN
+InfoKey: Author
+InfoValue: Jairo Eduardo Lopez
+InfoKey: Subject
+InfoValue: Next Generation Networks
+InfoKey: Keywords
+InfoValue: network ICN mobility ns3 ndn ndnSIM
