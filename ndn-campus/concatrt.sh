@@ -9,6 +9,6 @@ cd results
 for j in "${VAR[@]}"
 do
     TMP=$FILE-$j
-    ../concatall.sh run-01/$TMP-$DEF $TMP-matome.txt "run-*/$TMP*"
+    ../concat.sh run-01/$TMP-$DEF $TMP-matome.txt "run-*/$TMP*"
 done
 

@@ -185,17 +185,43 @@ g.test = ggplot (satTime, aes(linetype=Type, colour=Variable)) +
   scale_colour_discrete(name = "Strategy Types",
                         labels = c("BestRoute", "Flooding", "SmartFlooding", "Ideal"))
 
-#print (g.test)
+print (g.test)
 
 summaryBy (Packets ~ Type, data=rawdata.flood, FUN=sum)
 summaryBy (Packets ~ Type, data=rawdata.bestr, FUN=sum)
 summaryBy (Packets ~ Type, data=rawdata.smart, FUN=sum)
 summaryBy (Packets ~ Type, data=rawdata.perfect, FUN=sum)
 
-png ("/home/user1/git/ccn-sim-1/documents/papers/satisfied-timeout.png", width=1024, height=768)
-print (g.test)
-x = dev.off ()
+#png ("/home/user1/git/ccn-sim-1/documents/papers/satisfied-timeout.png", width=1024, height=768)
+#print (g.test)
+#x = dev.off ()
 
+rawapp.flood = read.table ("/home/user1/git/ccn-sim-1/ndn-campus/results/CCNWireless-app-delays-flood-matome.txt", header=T)
+rawapp.bestr = read.table ("/home/user1/git/ccn-sim-1/ndn-campus/results/CCNWireless-app-delays-bestr-matome.txt", header=T)
+rawapp.smart = read.table ("/home/user1/git/ccn-sim-1/ndn-campus/results/CCNWireless-app-delays-smart-matome.txt", header=T)
+rawapp.perfect = read.table ("/home/user1/git/ccn-sim-1/ndn-campus/results/CCNWirelessPerfect-app-delays-flood-01-001-012.txt", header=T)
+
+rawhopapp.flood = read.table ("/home/user1/git/ccn-sim-1/ndn-campus/results/CCNWireless-app-delays-flood-hop-matome.txt", header=T)
+rawhopapp.bestr = read.table ("/home/user1/git/ccn-sim-1/ndn-campus/results/CCNWireless-app-delays-bestr-hop-matome.txt", header=T)
+rawhopapp.smart = read.table ("/home/user1/git/ccn-sim-1/ndn-campus/results/CCNWireless-app-delays-smart-hop-matome.txt", header=T)
+
+max(rawapp.perfect$SeqNo)
+mean(rawapp.flood$SeqNo)
+sd(rawapp.flood$SeqNo)
+
+mean(rawapp.bestr$SeqNo)
+sd(rawapp.bestr$SeqNo)
+
+mean(rawapp.smart$SeqNo)
+sd(rawapp.smart$SeqNo)
+
+summaryBy(HopCount~AppId, data=rawhopapp.flood, FUN=c(mean,sd))
+summaryBy(HopCount~AppId, data=rawhopapp.bestr, FUN=c(mean,sd))
+summaryBy(HopCount~AppId, data=rawhopapp.smart, FUN=c(mean,sd))
+
+
+mean(rawapp.perfect$HopCount)
+sd(rawapp.perfect$HopCount)
 # # Total packets - Data
 # g.data <- ggplot (flood.data.combined, aes(x=Time, y=PacketRaw.sum, color=Type)) +
 #   geom_line(aes (linetype=Type), size=0.5) + 

@@ -228,6 +228,9 @@ int main (int argc, char *argv[])
 	sprintf (filename, "%s/%s-rate-trace-%s", results, scenario, fileId);
 	ndn::L3RateTracer::InstallAll (filename, Seconds (1.0));
 
+	sprintf (filename, "%s/%s-app-delays-%s", results, scenario, fileId);
+	ndn::AppDelayTracer::InstallAll (filename);
+
 	Simulator::Stop (Seconds (28.0));
 	Simulator::Run ();
 	Simulator::Destroy ();
