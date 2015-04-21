@@ -46,14 +46,17 @@ intdata = data
 
 # exclude irrelevant types - CCN
 if (opt$ndn) {
-  data = subset (data, Type %in% c("InData", "OutData") & Packets > 0)
+  data = subset (data, Type %in% c("InData", "OutData"))
   intdata = subset(intdata, Type %in% c("InInterests", "OutInterests") & Packets > 0)
 }
 
 # exclude irrelevant types - TCP/IP
 if (opt$tcp) {
-  data = subset (data, Type %in% c("In", "Out", "Drop") & Packets > 0)
+  data = subset (data, Type %in% c("In", "Out", "Drop"))
 }
+
+# Filter by subset
+data = subset(data, Node %in% sel)
 
 name = sprintf("Network average throughput of Campus Network, %d campuses, %d server, %d client, %d MB of content transmitted",
                opt$networks, opt$producers, opt$clients, (opt$contentsize /1048576))

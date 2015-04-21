@@ -326,7 +326,11 @@ int main (int argc, char *argv[])
 
 	pos = mob->GetPosition();
 
-	initialAlloc->Add (pos + diff);
+	pos.x += diff.x;
+	pos.y += diff.y;
+	pos.z += diff.z;
+
+	initialAlloc->Add (pos);
 
 	// Put everybody into a line
 	mobilityTerminals.SetPositionAllocator(initialAlloc);
@@ -344,7 +348,11 @@ int main (int argc, char *argv[])
 	{
 		mob = apsContainer.Get (j)->GetObject<MobilityModel>();
 
-		Vector wayP = mob->GetPosition () + diff;
+		Vector wayP = mob->GetPosition ();
+
+		wayP.x += diff.x;
+		wayP.y += diff.y;
+		wayP.z += diff.z;
 
 		staWaypointMobility->AddWaypoint (Waypoint(Seconds(sec), wayP));
 		staWaypointMobility->AddWaypoint (Waypoint(Seconds(sec + waitint), wayP));
